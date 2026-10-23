@@ -31,4 +31,12 @@ const youtube = {
   },
 }
 
-export default { plugins: [vue(), youtube], server: { watch: { ignored: ['**/media/**'] } } }
+// relays LAN sync messages (src/sync.js) between the director window and camera operator views
+const sync = {
+  name: 'rundown-sync',
+  configureServer(server) {
+    for (const ev of ['rundown:show', 'rundown:clock', 'rundown:hello']) server.ws.on(ev, data => server.ws.send(ev, data))
+  },
+}
+
+export default { plugins: [vue(), youtube, sync], server: { watch: { ignored: ['**/media/**'] } } }

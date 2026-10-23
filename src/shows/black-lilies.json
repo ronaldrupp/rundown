@@ -1,0 +1,380 @@
+{
+ "production": "Eurovision Song Contest 2026",
+ "episode": "GRAND FINAL \u2013 INTERVAL ACT",
+ "songNo": 1,
+ "title": "Black Lilies",
+ "artist": "Parov Stelar",
+ "bpm": 125,
+ "beatsPerBar": 4,
+ "snap": true,
+ "duration": 226.66,
+ "tcOffset": 75600,
+ "zoom": 80,
+ "media": {
+  "file": "/media/black-lilies.mp4",
+  "title": "Black Lilies (ESC 2026)",
+  "url": "https://www.youtube.com/watch?v=ppCyj5DxO8s"
+ },
+ "cams": [
+  {
+   "id": 1,
+   "name": "TOP SHOT",
+   "color": "#19e3c4"
+  },
+  {
+   "id": 2,
+   "name": "STEADICAM",
+   "color": "#f2e600"
+  },
+  {
+   "id": 3,
+   "name": "CRANE FOH",
+   "color": "#6a3df5"
+  },
+  {
+   "id": 4,
+   "name": "HIGH WIDE HOUSE",
+   "color": "#3d8bfd"
+  },
+  {
+   "id": 5,
+   "name": "HANDHELD SL",
+   "color": "#ff4a12"
+  },
+  {
+   "id": 6,
+   "name": "TELE CU FOH",
+   "color": "#d61fd6"
+  },
+  {
+   "id": 7,
+   "name": "LOW FRONT PIT",
+   "color": "#1fb74a"
+  },
+  {
+   "id": 8,
+   "name": "CENTER TELE LED",
+   "color": "#ff7a1a"
+  },
+  {
+   "id": 9,
+   "name": "HANDHELD SR",
+   "color": "#8b3fc9"
+  }
+ ],
+ "cues": [
+  {
+   "id": 1,
+   "start": 1.104,
+   "cam": 1,
+   "note": "KALEIDOSCOPE FORMATION, SLOW DESCENT"
+  },
+  {
+   "id": 2,
+   "start": 36.344,
+   "cam": 2,
+   "note": "THRU HOODED DANCERS TO VOCALIST"
+  },
+  {
+   "id": 3,
+   "start": 51.744,
+   "cam": 3,
+   "note": "PUSH FROM WIDE TO DJ AT CONSOLE"
+  },
+  {
+   "id": 4,
+   "start": 67.104,
+   "cam": 5,
+   "note": "VIOLINS SILHOUETTE BACKLIT"
+  },
+  {
+   "id": 5,
+   "start": 74.744,
+   "cam": 3,
+   "note": "WIDE SYMMETRIC, LIGHT HITS"
+  },
+  {
+   "id": 6,
+   "start": 80.544,
+   "cam": 7,
+   "note": "DANCERS ON FLOOR"
+  },
+  {
+   "id": 7,
+   "start": 82.464,
+   "cam": 5,
+   "note": "HAT VOCALIST KNEELING IN SMOKE"
+  },
+  {
+   "id": 8,
+   "start": 85.344,
+   "cam": 7,
+   "note": "LINE OF HANDS"
+  },
+  {
+   "id": 9,
+   "start": 86.304,
+   "cam": 6,
+   "note": "CU HAT VOCALIST"
+  },
+  {
+   "id": 10,
+   "start": 89.024,
+   "cam": 7,
+   "note": "DANCERS ON FLOOR"
+  },
+  {
+   "id": 11,
+   "start": 90.584,
+   "cam": 6,
+   "note": "MS HAT VOCALIST"
+  },
+  {
+   "id": 12,
+   "start": 93.064,
+   "cam": 5,
+   "note": "HOODED MUSICIANS SILHOUETTE"
+  },
+  {
+   "id": 13,
+   "start": 94.024,
+   "cam": 8,
+   "note": "LED FACE"
+  },
+  {
+   "id": 14,
+   "start": 97.464,
+   "cam": 5,
+   "note": "FEMALE VOCALIST WIDE"
+  },
+  {
+   "id": 15,
+   "start": 99.344,
+   "cam": 6,
+   "note": "MCU FEMALE VOCALIST W/ LED FACE"
+  },
+  {
+   "id": 16,
+   "start": 111.264,
+   "cam": 4,
+   "note": "HIGH WIDE STAGE"
+  },
+  {
+   "id": 17,
+   "start": 113.104,
+   "cam": 3,
+   "note": "WHITE DANCERS + DJ CONSOLE"
+  },
+  {
+   "id": 18,
+   "start": 117.024,
+   "cam": 7,
+   "note": "CU HOODED DANCERS"
+  },
+  {
+   "id": 19,
+   "start": 118.864,
+   "cam": 4,
+   "note": "HIGH WIDE SWEEP"
+  },
+  {
+   "id": 20,
+   "start": 120.864,
+   "cam": 3,
+   "note": "FRONT WIDE, ECLIPSE LED"
+  },
+  {
+   "id": 21,
+   "start": 128.544,
+   "cam": 4,
+   "note": "HIGH WIDE HOUSE LEFT"
+  },
+  {
+   "id": 22,
+   "start": 132.344,
+   "cam": 5,
+   "note": "FIGURE IN SMOKE, VIOLIN"
+  },
+  {
+   "id": 23,
+   "start": 135.264,
+   "cam": 3,
+   "note": "WIDE SYMMETRIC"
+  },
+  {
+   "id": 24,
+   "start": 136.224,
+   "cam": 2,
+   "note": "THRU WHITE DANCERS"
+  },
+  {
+   "id": 25,
+   "start": 142.664,
+   "cam": 7,
+   "note": "DANCERS LOW FRONT"
+  },
+  {
+   "id": 26,
+   "start": 143.824,
+   "cam": 3,
+   "note": "WIDE TEAL STAGE"
+  },
+  {
+   "id": 27,
+   "start": 149.664,
+   "cam": 1,
+   "note": "RING FROM ABOVE"
+  },
+  {
+   "id": 28,
+   "start": 151.544,
+   "cam": 8,
+   "note": "ORANGE DANCER PILE > TILT TO DJ IN ECLIPSE"
+  },
+  {
+   "id": 29,
+   "start": 159.224,
+   "cam": 7,
+   "note": "ORANGE DANCER PILE"
+  },
+  {
+   "id": 30,
+   "start": 160.664,
+   "cam": 6,
+   "note": "FEMALE VOCALIST + GUITARIST, PUSH IN"
+  },
+  {
+   "id": 31,
+   "start": 170.164,
+   "cam": 8,
+   "note": "ECLIPSE CU PULL BACK TO WIDE"
+  },
+  {
+   "id": 32,
+   "start": 182.304,
+   "cam": 2,
+   "note": "DANCERS + DJ CLOSE"
+  },
+  {
+   "id": 33,
+   "start": 185.904,
+   "cam": 8,
+   "note": "WHITE ECLIPSE, DJ SMALL"
+  },
+  {
+   "id": 34,
+   "start": 189.944,
+   "cam": 5,
+   "note": "VIOLINS SILHOUETTE"
+  },
+  {
+   "id": 35,
+   "start": 193.704,
+   "cam": 9,
+   "note": "SAX + BRASS"
+  },
+  {
+   "id": 36,
+   "start": 196.704,
+   "cam": 5,
+   "note": "DRUMMER"
+  },
+  {
+   "id": 37,
+   "start": 197.664,
+   "cam": 3,
+   "note": "WHITE DANCERS, PUSH TO DJ"
+  },
+  {
+   "id": 38,
+   "start": 200.984,
+   "cam": 8,
+   "note": "ECLIPSE, DJ AT CONSOLE"
+  },
+  {
+   "id": 39,
+   "start": 205.344,
+   "cam": 4,
+   "note": "HIGH WIDE + CROWD"
+  },
+  {
+   "id": 40,
+   "start": 209.144,
+   "cam": 3,
+   "note": "FRONT WIDE ECLIPSE"
+  },
+  {
+   "id": 41,
+   "start": 213.024,
+   "cam": 4,
+   "note": "HIGH WIDE"
+  },
+  {
+   "id": 42,
+   "start": 216.224,
+   "cam": 6,
+   "note": "CU MAN IN SUNGLASSES"
+  },
+  {
+   "id": 43,
+   "start": 222.584,
+   "cam": 4,
+   "note": "ARENA WIDE, CROWD"
+  }
+ ],
+ "tracks": [
+  {
+   "id": 1,
+   "name": "Lyrics 1",
+   "kind": "lyrics",
+   "items": []
+  },
+  {
+   "id": 2,
+   "name": "Staging",
+   "kind": "note",
+   "items": [
+    {
+     "id": 1,
+     "start": 1.104,
+     "text": "Kaleidoscope formation from above"
+    },
+    {
+     "id": 2,
+     "start": 36.344,
+     "text": "Hooded dancers + vocalist"
+    },
+    {
+     "id": 3,
+     "start": 94.024,
+     "text": "LED face projections"
+    },
+    {
+     "id": 4,
+     "start": 143.824,
+     "text": "Build"
+    },
+    {
+     "id": 5,
+     "start": 151.544,
+     "text": "Orange eclipse section"
+    },
+    {
+     "id": 6,
+     "start": 177.264,
+     "text": "Strobe hits, teal"
+    },
+    {
+     "id": 7,
+     "start": 185.904,
+     "text": "White eclipse"
+    },
+    {
+     "id": 8,
+     "start": 222.584,
+     "text": "Out: arena wide"
+    }
+   ]
+  }
+ ]
+}

@@ -1,7 +1,10 @@
 <script setup>
 import Live from './Live.vue'
+import { caller } from './caller'
+import { sw } from './switcher'
+import SwitcherPanel from './SwitcherPanel.vue'
 import { ref, computed, watchEffect } from 'vue'
-import { show, clock, cues, liveIdx, camOf, stc, parseStc, bb, parseBb, dur, tc, seek, toggle, addCue, removeCue, addCam, addItem, snapBeat, spb, secs, loadAudio, loadYoutube, audio } from './store'
+import { FPS, show, clock, cues, liveIdx, camOf, stc, parseStc, bb, parseBb, dur, tc, seek, toggle, addCue, removeCue, addCam, addItem, snapBeat, spb, secs, loadAudio, loadYoutube, audio } from './store'
 
 defineProps({ liveMode: Boolean }) // not `live`: that name is the on-air shot below
 
@@ -12,6 +15,7 @@ const w = d => `${d * show.zoom}px`
 const span = computed(() => [clock.now - 1200 / show.zoom, clock.now + 2400 / show.zoom])
 const visible = (a, b) => b > span.value[0] && a < span.value[1]
 
+const swOpen = ref(false)
 const selId = ref(null)
 const sel = computed(() => cues.value.find(c => c.id === selId.value) ?? cues.value[liveIdx.value])
 const selIdx = computed(() => cues.value.indexOf(sel.value))
@@ -23,6 +27,19 @@ function setStart(val, parse) {
   if (t !== null && raw.value) raw.value.start = Math.max(0, t)
 }
 function pick(c) { selId.value = c.id; seek(c.start) }
+// drag a shot block to move its cut (snapped to the beat, kept between its neighbours); a click without movement selects it
+function dragCut(e, c) {
+  const el = e.currentTarget, x0 = e.clientX, i = cues.value.indexOf(c), cue = show.cues.find(q => q.id === c.id)
+  const lo = i ? cues.value[i - 1].start + 1 / FPS : 0, hi = (cues.value[i + 1]?.start ?? show.duration) - 1 / FPS
+  let moved = false
+  el.setPointerCapture(e.pointerId)
+  el.onpointermove = m => {
+    if (!moved && Math.abs(m.clientX - x0) < 4) return
+    moved = true
+    cue.start = Math.min(hi, Math.max(lo, snapBeat(c.start + (m.clientX - x0) / show.zoom)))
+  }
+  el.onpointerup = () => { el.onpointermove = el.onpointerup = null; if (!moved) pick(c) }
+}
 function cut(cam) { addCue(snapBeat(clock.now), cam.id); selId.value = null }
 function renameCam(cam) { const n = prompt('Camera name', cam.name); if (n) cam.name = n.toUpperCase() }
 
@@ -162,10 +179,14 @@ watchEffect(() => {
       <span class="spacer"></span>
       <label title="Tempo">♩<input type="number" min="20" max="300" v-model.number="show.bpm" /></label>
       <label title="Beats per bar"><input type="number" min="1" max="12" v-model.number="show.beatsPerBar" />/4</label>
+      <button class="caller" :class="{ on: caller.on }" @click="caller.on = !caller.on" :aria-pressed="caller.on" title="Spoken camera calls and countdown">{{ caller.on ? '🔊' : '🔇' }} Caller</button>
+      <button class="caller" :class="{ on: sw.kind !== 'off' }" @click="swOpen = !swOpen" :aria-expanded="swOpen" title="Send cuts to OBS or vMix">⇄ Output{{ sw.kind !== 'off' ? ` · ${sw.kind.toUpperCase()}` : '' }}</button>
       <label title="Snap cuts to the beat"><input type="checkbox" v-model="show.snap" />Snap</label>
       <label v-if="!clock.audioName" title="Song length in seconds">⏱<input type="number" min="1" v-model.number="show.duration" /></label>
       <label title="Zoom">🔍<input type="range" min="10" max="300" v-model.number="show.zoom" /></label>
     </div>
+
+    <SwitcherPanel v-if="swOpen" @close="swOpen = false" />
 
     <div class="overview" @click="seek((($event.clientX - $event.currentTarget.getBoundingClientRect().left) / $event.currentTarget.clientWidth) * show.duration)">
       <div v-for="c in cues" :key="c.id" :style="{ left: (c.start / show.duration) * 100 + '%', width: ((c.end - c.start) / show.duration) * 100 + '%', background: camOf(c.cam).color }"></div>
@@ -183,7 +204,7 @@ watchEffect(() => {
         <div class="head"><span class="ico red">⏺</span>Switcher 1<small>M/E 1</small></div>
         <div class="lane" @click.self="seek(timeAt($event))">
           <template v-for="(c, i) in cues" :key="c.id">
-            <div v-if="visible(c.start, c.end)" class="shot" :class="{ sel: c === sel }" @click="pick(c)"
+            <div v-if="visible(c.start, c.end)" class="shot" :class="{ sel: c === sel }" @pointerdown="dragCut($event, c)"
               :style="{ left: x(c.start), width: w(c.end - c.start), background: camOf(c.cam).color }">
               <b>{{ c.cam }}&nbsp; {{ c.note || camOf(c.cam).name }}</b>
               <span>◧</span>
@@ -213,7 +234,7 @@ watchEffect(() => {
 <style scoped>
 .gutter { cursor: col-resize; background: #1a1a1a; border-left: 1px solid #2a2a2a; border-right: 1px solid #2a2a2a; touch-action: none; }
 .gutter:hover, .gutter:focus-visible { background: #3d8bfd; outline: none; }
-.editor { height: 100%; display: grid; grid-template-columns: minmax(300px, 560px) 1fr; grid-template-rows: minmax(0, 1fr) auto auto auto; background: #000; }
+.editor { position: relative; height: 100%; display: grid; grid-template-columns: minmax(300px, 560px) 1fr; grid-template-rows: minmax(0, 1fr) auto auto auto; background: #000; }
 aside { display: flex; flex-direction: column; background: #121212; border-right: 1px solid #222; overflow: auto; min-height: 0; }
 .tabs { padding: 6px 12px; color: var(--dim); font-size: 13px; text-align: center; border-bottom: 1px solid #222; }
 .info { padding: 8px 12px; display: flex; flex-direction: column; gap: 6px; }
@@ -244,6 +265,8 @@ aside { display: flex; flex-direction: column; background: #121212; border-right
 .video .pgm { position: absolute; left: 12px; right: 12px; bottom: 84px; }
 .video .pgm > :not(.lyric) { display: none; }
 .video .pgm .lyric { margin: 0; text-shadow: 0 1px 4px #000; }
+.toolbar .caller { font-size: 13px; border-radius: 4px; color: var(--dim); }
+.toolbar .caller.on { background: #2a2a2a; color: #fff; }
 .toolbar .yt { font-size: 13px; background: #b0121e; color: #fff; border-radius: 4px; }
 .pgm .num { font-size: clamp(60px, 12vw, 160px); font-weight: 800; line-height: 1; color: var(--c); text-shadow: 0 0 40px color-mix(in srgb, var(--c) 60%, transparent); }
 .pgm .name { font-size: 28px; font-weight: 700; letter-spacing: .05em; }
@@ -291,7 +314,8 @@ aside { display: flex; flex-direction: column; background: #121212; border-right
 .bar b { color: #ccc; }
 .switcher { height: 96px; }
 .switcher .head { background: #161616; }
-.shot { position: absolute; top: 0; bottom: 0; padding: 6px 8px; color: #fff; display: flex; flex-direction: column; gap: 2px; overflow: hidden; white-space: nowrap; border-right: 2px solid #000; cursor: pointer; font-size: 12px; }
+.shot { position: absolute; top: 0; bottom: 0; padding: 6px 8px; color: #fff; display: flex; flex-direction: column; gap: 2px; overflow: hidden; white-space: nowrap; border-right: 2px solid #000; cursor: grab; font-size: 12px; touch-action: none; }
+.shot:active { cursor: grabbing; }
 .shot > b { font-size: 15px; text-transform: uppercase; text-overflow: ellipsis; overflow: hidden; }
 .shot i { opacity: .7; }
 .shot.sel { box-shadow: inset 0 0 0 2px #fff; }

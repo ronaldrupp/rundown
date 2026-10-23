@@ -25,11 +25,15 @@ Both screenshots show the example rundown for Tate McRae's "Housewife" ([see bel
 - **Cut list on timecode and music**: each shot is a cut to a camera that runs until the next cut. Edit a shot by SMPTE timecode (25 fps, with an LTC start offset) or by `bar.beat`, using the song's BPM and time signature.
 - **Timeline editor**: switcher track with LiveEdit-style shot blocks, a bar/timecode ruler, an overview strip, lyrics and note tracks, and an audio waveform. The playhead stays fixed while the content scrolls under it.
 - **Live cutting**: press `1`–`9` / `0` or click a camera button to cut at the playhead, optionally snapped to the beat.
+- **Timeline editing**: drag a shot to move its cut (snapped to the beat, kept between its neighbours), with undo/redo.
 - **LIVE mode**:
   - a waterfall list of upcoming shots whose colored bars slide toward the now-line
   - a countdown for every camera to its next shot
   - a program monitor with a timecode/shot overlay and a NOW/NEXT bar with a progress bar
   - a draggable divider between the list and the video
+- **Camera operator view**: `/#cam=3` on a phone or tablet shows one operator's tally (ON AIR / STANDBY · NEXT / CLEAR), a countdown and their upcoming shots, synced live from the director's window.
+- **Switcher output**: sends the planned cuts to **OBS** (WebSocket v5, with password) or **vMix** (HTTP API) while the rundown plays, and optionally the next shot to preview.
+- **Caller**: a spoken PA call at each cut ("Five. Next, three.") and a "3, 2, 1" count before longer shots, one voice at a time.
 - **Media**: load a local audio file or a reference video. The video drives the show clock, so picture and UI never drift apart.
 - **YouTube import** (dev server only): paste a link and the server downloads it with `yt-dlp`.
 - **Rundown files**: every `src/shows/*.json` appears in the **Open…** menu. Your edits autosave to the browser's `localStorage`.
@@ -57,8 +61,32 @@ brew install yt-dlp ffmpeg
 | `1`–`9`, `0` | Cut to camera 1–10 at the playhead |
 | `←` / `→` | Jump one bar |
 | `Home` | Back to start |
+| `⌘Z` / `⇧⌘Z` | Undo / redo |
 | `L` | Toggle LIVE mode |
 | Mouse wheel on timeline | Scrub |
+
+## Camera operator view
+
+Run the dev server on your network, then open a camera's view on each operator's device:
+
+```bash
+npm run dev:lan
+```
+
+```
+http://<your-mac's-ip>:5173/#cam=3
+```
+
+The director's window (the normal view) publishes the rundown and clock about 10 times a second over the dev server's WebSocket. Camera views only follow. Keep the director's window in front: browsers slow down background tabs, which pauses the clock updates.
+
+`dev:lan` makes the whole dev server, including the YouTube download endpoint, reachable from your local network. Only use it on networks you trust.
+
+## Switcher output
+
+Open **⇄ Output** in the toolbar, pick the mixer and map each camera to an OBS scene or a vMix input (the default is `CAM <n>`). **Take** cuts to a camera immediately, for testing. During playback, every change of the on-air camera is sent to the mixer.
+
+- **OBS**: enable *Tools → WebSocket Server Settings*. The default URL is `ws://localhost:4455`. The password is kept in memory only. "Send next shot to preview" needs Studio Mode.
+- **vMix**: enable *Settings → Web Controller*. The default URL is `http://localhost:8088`. Calls are fire-and-forget (vMix sends no CORS headers), so a wrong input name fails silently in vMix.
 
 ## Deep links
 
@@ -113,6 +141,7 @@ ffmpeg -ss 1.0613 -to 172.24 -i media/full.mp4 -c:v libx264 -c:a aac media/house
 
 ## Limitations
 
-- The YouTube import runs only with `npm run dev`. A static build has no server to call.
+- The YouTube import and camera-view sync run only with the dev server. A static build has no server to call.
+- Sync is last-writer-wins. Run one director window per show.
 - Edits live in browser storage only. There's no export or sync yet.
 - Downloaded videos are copyrighted by their owners and are excluded from the repo (`media/` is git-ignored). Respect YouTube's Terms of Service and only download content you have the rights to use.

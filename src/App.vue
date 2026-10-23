@@ -1,17 +1,25 @@
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
-import { show, clock, toggle, seek, tc, parseTc, addCue, snapBeat, spb, rundowns, loadShow } from './store'
+import { show, clock, toggle, seek, tc, parseTc, addCue, snapBeat, spb, rundowns, loadShow, loadMedia, undo, redo } from './store'
+import { publish, follow } from './sync'
 import Rundown from './Rundown.vue'
+import CamView from './CamView.vue'
 
-// deep link: #live&show=<rundown name>&t=<seconds>
+// deep link: #live&show=<rundown name>&t=<seconds>, or #cam=<n> for a camera operator view
 const link = new URLSearchParams(location.hash.slice(1))
+const cam = +link.get('cam') || null
 const view = ref(link.has('live') ? 'live' : 'rundown')
-if (rundowns[link.get('show')]) loadShow(link.get('show')).then(() => link.has('t') && seek(+link.get('t')))
-else if (link.has('t')) seek(+link.get('t'))
+if (cam) follow()
+else {
+  publish()
+  if (rundowns[link.get('show')]) loadShow(link.get('show')).then(() => link.has('t') && seek(+link.get('t')))
+  else loadMedia().then(() => link.has('t') && seek(+link.get('t')))
+}
 
 // keys: space = play/pause, 1-9/0 = record a cut to that camera at the playhead, arrows = nudge one bar
 function onKey(e) {
   if (e.target.matches('input, select, textarea')) return
+  if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'z') { e.preventDefault(); return e.shiftKey ? redo() : undo() }
   if (e.code === 'Space') { e.preventDefault(); toggle() }
   else if (/^[0-9]$/.test(e.key) && show.cams[(+e.key || 10) - 1]) addCue(snapBeat(clock.now), show.cams[(+e.key || 10) - 1].id)
   else if (e.key === 'ArrowLeft') seek(clock.now - spb() * show.beatsPerBar)
@@ -19,11 +27,13 @@ function onKey(e) {
   else if (e.key === 'Home') seek(0)
   else if (e.key === 'l') view.value = view.value === 'live' ? 'rundown' : 'live'
 }
-onMounted(() => addEventListener('keydown', onKey))
+onMounted(() => cam || addEventListener('keydown', onKey))
 onUnmounted(() => removeEventListener('keydown', onKey))
 </script>
 
 <template>
+  <CamView v-if="cam" :cam="cam" />
+  <template v-else>
   <header>
     <div class="prod">
       <div><input v-model="show.production" aria-label="Production" /><span class="badge">Production</span></div>
@@ -46,7 +56,8 @@ onUnmounted(() => removeEventListener('keydown', onKey))
   <main>
     <Rundown :live-mode="view === 'live'" />
   </main>
-  <footer>Space play/pause · 1–9, 0 cut to camera · click camera tile to cut · ←/→ one bar · wheel scrubs timeline · L toggles LIVE</footer>
+  <footer>Space play/pause · 1–9, 0 cut to camera · drag shots to move cuts · ⌘Z / ⇧⌘Z undo/redo · ←/→ one bar · wheel scrubs · L toggles LIVE</footer>
+  </template>
 </template>
 
 <style>

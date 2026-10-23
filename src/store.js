@@ -43,11 +43,14 @@ export function pause() { clock.playing = false; audio.pause() }
 export const toggle = () => (clock.playing ? pause() : play())
 export function seek(t) { clock.now = Math.max(0, Math.min(t, show.duration)); if (audio.src) audio.currentTime = clock.now }
 
+let loadId = 0
 export async function loadAudio(file, name = file.name) {
+  const id = ++loadId
   audio.src = URL.createObjectURL(file)
   clock.audioName = name
   clock.hasVideo = file.type.startsWith('video/')
   const buf = await new AudioContext().decodeAudioData(await file.arrayBuffer())
+  if (id !== loadId) return // a newer load started meanwhile; don't clobber it
   show.duration = buf.duration
   const data = buf.getChannelData(0), n = Math.ceil(buf.duration * 50), step = Math.floor(data.length / n)
   clock.peaks = Array.from({ length: n }, (_, i) => {
@@ -75,7 +78,6 @@ export async function loadMedia() {
   const r = await fetch(show.media.file)
   if (r.ok) await loadAudio(await r.blob(), show.media.title)
 }
-loadMedia()
 
 // music + timecode math
 export const spb = () => 60 / show.bpm
@@ -128,6 +130,24 @@ export function addCam() {
 export function addItem(track, start, text) {
   track.items.push({ id: Math.max(0, ...track.items.map(i => i.id)) + 1, start, text })
 }
+// undo/redo: snapshots of the rundown (zoom excluded), recorded once edits settle
+const hist = { past: [], future: [], cur: null, skip: false, timer: 0 }
+const snap = () => JSON.stringify({ ...show, zoom: undefined })
+hist.cur = snap()
+watch(show, () => {
+  if (hist.skip) return (hist.skip = false)
+  clearTimeout(hist.timer)
+  hist.timer = setTimeout(() => {
+    const s = snap()
+    if (s === hist.cur) return
+    hist.past.push(hist.cur); hist.cur = s; hist.future = []
+    if (hist.past.length > 100) hist.past.shift()
+  }, 250)
+}, { deep: true })
+function restore(s) { clearTimeout(hist.timer); hist.skip = true; Object.assign(show, JSON.parse(s)); hist.cur = s }
+export function undo() { if (hist.past.length) { hist.future.push(hist.cur); restore(hist.past.pop()) } }
+export function redo() { if (hist.future.length) { hist.past.push(hist.cur); restore(hist.future.pop()) } }
+
 // saved rundowns: every src/shows/*.json plus the demo
 const files = import.meta.glob('./shows/*.json', { eager: true, import: 'default' })
 export const rundowns = { Demo: demo, ...Object.fromEntries(Object.values(files).map(s => [`${s.artist} – ${s.title}`, s])) }
