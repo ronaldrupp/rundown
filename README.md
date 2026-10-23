@@ -2,23 +2,27 @@
 
 A browser-based camera rundown for music performances in live TV. Plan every camera cut against **timecode** and **musical bars/beats**, then run the show from a **LIVE** view with a scrolling shot waterfall, per-camera countdowns and the program video beside it.
 
-Built with Vue 3 and Vite. No backend except a small dev-server endpoint for downloading reference videos.
+Built with Vue 3 and Vite. No separate backend: the Vite dev server also downloads reference videos and relays the clock to camera operator devices.
 
 > Inspired by professional show-calling tools such as [LiveEdit](https://liveedit.app) and [CuePilot](https://www.cuepilot.com). This is an independent hobby project. It is not affiliated with, endorsed by or connected to either product or company. All product names and trademarks belong to their respective owners.
 
 ## Screenshots
 
-Both screenshots show the example rundown for Tate McRae's "Housewife" ([see below](#example-reverse-engineered-shot-list)).
+All screenshots show the example rundown for Tate McRae's "Housewife" ([see below](#example-reverse-engineered-shot-list)). The performance video is blurred on purpose.
 
-**Editor**: shot info, camera buttons, program monitor and the track timeline.
+**Editor**: shot info, camera buttons, program monitor and track timeline, with the switcher **Output** panel connected to OBS.
 
-![Editor](docs/editor.png)
+![Editor with the switcher output panel](docs/editor.png)
 
 **LIVE**: the shot waterfall with sliding duration bars, per-camera countdowns, and the program monitor with a NOW/NEXT bar.
 
 ![LIVE view](docs/live.png)
 
-<sub>Video frames: Tate McRae – 2026 Victoria's Secret Fashion Show Performance, © 2026 RCA Records / Sony Music Entertainment. Shown as reduced UI screenshots for illustration only.</sub>
+**Camera operator view** (`/#cam=5` on a phone): the tally follows the director's window live. It's red while on air, green on standby and dark when clear, with the operator's upcoming shots underneath.
+
+<img src="docs/camera.png" alt="Camera operator view on a phone, showing ON AIR" width="280">
+
+<sub>Video frames (blurred): Tate McRae – 2026 Victoria's Secret Fashion Show Performance, © 2026 RCA Records / Sony Music Entertainment. Shown for illustration only.</sub>
 
 ## Features
 
@@ -113,6 +117,10 @@ A rundown is plain JSON. See [`src/shows/housewife.json`](src/shows/housewife.js
   "tracks": [{ "id": 2, "name": "Staging", "kind": "note", "items": [{ "id": 1, "start": 0, "text": "Dark open" }] }]
 }
 ```
+
+### Examples: reverse-engineered shot lists
+
+Two rundowns ship as examples: Tate McRae's "Housewife" (below), and Parov Stelar's "Black Lilies", the interval act of the Eurovision Song Contest 2026 Grand Final in Vienna ([`black-lilies.json`](src/shows/black-lilies.json): 9 cameras, 43 shots, 125 BPM, including dissolves and long single-take crane and Steadicam shots).
 
 ### Example: reverse-engineered shot list
 
