@@ -18,9 +18,15 @@ All screenshots show the example rundown for Tate McRae's "Housewife" ([see belo
 
 ![LIVE view](docs/live.png)
 
-**Camera operator view** (`/#cam=5` on a phone): the tally follows the director's window live. It's red while on air, green on standby and dark when clear, with the operator's upcoming shots underneath.
+**Camera operator view** (`/#cam=5` on a tablet, CuePilot-style):
 
-<img src="docs/camera.png" alt="Camera operator view on a phone, showing ON AIR" width="280">
+- **Top:** the whole cut flow.
+- **Middle:** this camera's bar, red on air and green on standby, with a big countdown.
+- **Below:** only this camera's shots on the same sliding time axis, with the time to reposition between them (`+40s`).
+
+It follows the director's window live.
+
+<img src="docs/camera.png" alt="Camera operator view on a tablet, camera 5 on air" width="420">
 
 <sub>Video frames (blurred): Tate McRae – 2026 Victoria's Secret Fashion Show Performance, © 2026 RCA Records / Sony Music Entertainment. Shown for illustration only.</sub>
 
@@ -35,7 +41,7 @@ All screenshots show the example rundown for Tate McRae's "Housewife" ([see belo
   - a countdown for every camera to its next shot
   - a program monitor with a timecode/shot overlay and a NOW/NEXT bar with a progress bar
   - a draggable divider between the list and the video
-- **Camera operator view**: `/#cam=3` on a phone or tablet shows one operator's tally (ON AIR / STANDBY · NEXT / CLEAR), a countdown and their upcoming shots, synced live from the director's window.
+- **Camera operator view**: `/#cam=3` on a tablet or phone shows the cut flow, this camera's countdown bar (ON AIR / STANDBY / NEXT IN) and its own shots with repositioning time. It has an optional spoken "3, 2, 1" and a sync indicator, and follows the director's window live.
 - **Switcher output**: sends the planned cuts to **OBS** (WebSocket v5, with password) or **vMix** (HTTP API) while the rundown plays, and optionally the next shot to preview.
 - **Caller**: a spoken PA call at each cut ("Five. Next, three.") and a "3, 2, 1" count before longer shots, one voice at a time.
 - **Media**: load a local audio file or a reference video. The video drives the show clock, so picture and UI never drift apart.

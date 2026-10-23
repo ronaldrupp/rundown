@@ -55,6 +55,21 @@
    "id": 8,
    "name": "STEADICAM",
    "color": "#f2e600"
+  },
+  {
+   "id": 9,
+   "name": "WIDE HIGH FOH",
+   "color": "#8b3fc9"
+  },
+  {
+   "id": 10,
+   "name": "HANDHELD STAGE",
+   "color": "#7a3a2a"
+  },
+  {
+   "id": 11,
+   "name": "HOUSE RIGHT HH",
+   "color": "#ec4899"
   }
  ],
  "cues": [
@@ -79,7 +94,7 @@
   {
    "id": 4,
    "start": 25.399,
-   "cam": 3,
+   "cam": 9,
    "note": "LIGHT RIG, GROUP HIT"
   },
   {
@@ -103,7 +118,7 @@
   {
    "id": 8,
    "start": 37.649,
-   "cam": 3,
+   "cam": 9,
    "note": "DANCER LINE UNDER ARCH"
   },
   {
@@ -223,7 +238,7 @@
   {
    "id": 28,
    "start": 83.259,
-   "cam": 5,
+   "cam": 10,
    "note": "LOW SL TATE ARM UP"
   },
   {
@@ -295,7 +310,7 @@
   {
    "id": 40,
    "start": 111.089,
-   "cam": 7,
+   "cam": 11,
    "note": "TATE + DANCERS FROM HOUSE"
   },
   {

@@ -151,6 +151,11 @@ export function redo() { if (hist.future.length) { hist.past.push(hist.cur); res
 // saved rundowns: every src/shows/*.json plus the demo
 const files = import.meta.glob('./shows/*.json', { eager: true, import: 'default' })
 export const rundowns = { Demo: demo, ...Object.fromEntries(Object.values(files).map(s => [`${s.artist} – ${s.title}`, s])) }
+// self-check: a camera can't cut to itself live, so no rundown may put one shot of a camera right after another
+for (const [name, r] of Object.entries(rundowns)) {
+  const c = [...r.cues].sort((a, b) => a.start - b.start)
+  console.assert(c.every((q, i) => !i || q.cam !== c[i - 1].cam), `${name}: same camera cut back to back`)
+}
 export function loadShow(name) {
   pause()
   audio.removeAttribute('src'); audio.load()

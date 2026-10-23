@@ -9,6 +9,7 @@ import CamView from './CamView.vue'
 const link = new URLSearchParams(location.hash.slice(1))
 const cam = +link.get('cam') || null
 const view = ref(link.has('live') ? 'live' : 'rundown')
+addEventListener('hashchange', () => location.reload()) // deep links are read once at startup
 if (cam) follow()
 else {
   publish()
