@@ -1,0 +1,394 @@
+{
+ "production": "Victoria's Secret Fashion Show 2026",
+ "episode": "TATE McRAE SET",
+ "songNo": 1,
+ "title": "Housewife",
+ "artist": "Tate McRae",
+ "bpm": 133,
+ "beatsPerBar": 4,
+ "snap": true,
+ "duration": 171.2,
+ "tcOffset": 72000,
+ "zoom": 80,
+ "media": {
+  "file": "/media/housewife.mp4",
+  "title": "Housewife (VSFS 2026)",
+  "url": "https://www.youtube.com/watch?v=uo4JWL45ESY"
+ },
+ "cams": [
+  {
+   "id": 1,
+   "name": "CU CENTER TELE",
+   "color": "#ff4a12"
+  },
+  {
+   "id": 2,
+   "name": "MS CENTER TELE",
+   "color": "#3d8bfd"
+  },
+  {
+   "id": 3,
+   "name": "WIDE FOH",
+   "color": "#1fb74a"
+  },
+  {
+   "id": 4,
+   "name": "CRANE",
+   "color": "#6a3df5"
+  },
+  {
+   "id": 5,
+   "name": "LOW SL PIT",
+   "color": "#d61fd6"
+  },
+  {
+   "id": 6,
+   "name": "TOP SHOT",
+   "color": "#19e3c4"
+  },
+  {
+   "id": 7,
+   "name": "HOUSE LEFT HH",
+   "color": "#ff7a1a"
+  },
+  {
+   "id": 8,
+   "name": "STEADICAM",
+   "color": "#f2e600"
+  }
+ ],
+ "cues": [
+  {
+   "id": 1,
+   "start": 0,
+   "cam": 4,
+   "note": "CRANE PUSH THRU DANCERS TO STAGE"
+  },
+  {
+   "id": 2,
+   "start": 17.859,
+   "cam": 2,
+   "note": "SILHOUETTE LINE ON PLATFORM"
+  },
+  {
+   "id": 3,
+   "start": 21.629,
+   "cam": 3,
+   "note": "FULL STAGE + RUNWAY"
+  },
+  {
+   "id": 4,
+   "start": 25.399,
+   "cam": 3,
+   "note": "LIGHT RIG, GROUP HIT"
+  },
+  {
+   "id": 5,
+   "start": 29.069,
+   "cam": 2,
+   "note": "MS GROUP ON PLATFORM"
+  },
+  {
+   "id": 6,
+   "start": 32.709,
+   "cam": 1,
+   "note": "CU TATE THRU SOFT DANCERS"
+  },
+  {
+   "id": 7,
+   "start": 36.279,
+   "cam": 3,
+   "note": "VERY WIDE LIGHT FAN + HOUSE"
+  },
+  {
+   "id": 8,
+   "start": 37.649,
+   "cam": 3,
+   "note": "DANCER LINE UNDER ARCH"
+  },
+  {
+   "id": 9,
+   "start": 38.979,
+   "cam": 1,
+   "note": "MCU TATE SINGING"
+  },
+  {
+   "id": 10,
+   "start": 40.779,
+   "cam": 3,
+   "note": "DANCERS UNDER ARCH"
+  },
+  {
+   "id": 11,
+   "start": 42.279,
+   "cam": 1,
+   "note": "MCU TATE + 2 DANCERS"
+  },
+  {
+   "id": 12,
+   "start": 43.819,
+   "cam": 2,
+   "note": "TATE LEAP ON PLATFORM"
+  },
+  {
+   "id": 13,
+   "start": 46.319,
+   "cam": 1,
+   "note": "CU DANCERS SOFT"
+  },
+  {
+   "id": 14,
+   "start": 48.919,
+   "cam": 2,
+   "note": "MS GROUP POSE"
+  },
+  {
+   "id": 15,
+   "start": 51.229,
+   "cam": 1,
+   "note": "MCU TATE ARM UP"
+  },
+  {
+   "id": 16,
+   "start": 52.559,
+   "cam": 2,
+   "note": "FULL LINE ARMS CROSSED"
+  },
+  {
+   "id": 17,
+   "start": 54.399,
+   "cam": 1,
+   "note": "CU TATE SINGING"
+  },
+  {
+   "id": 18,
+   "start": 56.629,
+   "cam": 2,
+   "note": "MS GROUP ANGLE RIGHT"
+  },
+  {
+   "id": 19,
+   "start": 57.929,
+   "cam": 3,
+   "note": "ARCH WIDE"
+  },
+  {
+   "id": 20,
+   "start": 59.229,
+   "cam": 1,
+   "note": "CU TATE + DANCERS"
+  },
+  {
+   "id": 21,
+   "start": 63.269,
+   "cam": 2,
+   "note": "TATE JUMP W/ DANCERS"
+  },
+  {
+   "id": 22,
+   "start": 65.039,
+   "cam": 3,
+   "note": "ARCH WIDE"
+  },
+  {
+   "id": 23,
+   "start": 68.909,
+   "cam": 1,
+   "note": "MCU TATE CENTER OF PACK"
+  },
+  {
+   "id": 24,
+   "start": 72.349,
+   "cam": 4,
+   "note": "CRANE HIGH DOWN RUNWAY"
+  },
+  {
+   "id": 25,
+   "start": 75.879,
+   "cam": 1,
+   "note": "MCU TATE W/ DANCERS"
+  },
+  {
+   "id": 26,
+   "start": 77.489,
+   "cam": 2,
+   "note": "FS TATE + 2 ON PLATFORM"
+  },
+  {
+   "id": 27,
+   "start": 79.649,
+   "cam": 5,
+   "note": "LOW SL TATE + LINE BENT"
+  },
+  {
+   "id": 28,
+   "start": 83.259,
+   "cam": 5,
+   "note": "LOW SL TATE ARM UP"
+  },
+  {
+   "id": 29,
+   "start": 84.889,
+   "cam": 5,
+   "note": "LOW SL WIDE BLUE SPOT"
+  },
+  {
+   "id": 30,
+   "start": 86.759,
+   "cam": 3,
+   "note": "TATE + 3 DANCERS"
+  },
+  {
+   "id": 31,
+   "start": 88.729,
+   "cam": 1,
+   "note": "MCU TATE + LINE"
+  },
+  {
+   "id": 32,
+   "start": 91.269,
+   "cam": 2,
+   "note": "FULL LINE ON PLATFORM"
+  },
+  {
+   "id": 33,
+   "start": 92.699,
+   "cam": 4,
+   "note": "CRANE HIGH LIGHT FAN"
+  },
+  {
+   "id": 34,
+   "start": 94.169,
+   "cam": 2,
+   "note": "FULL LINE"
+  },
+  {
+   "id": 35,
+   "start": 96.469,
+   "cam": 1,
+   "note": "MCU TATE SINGING"
+  },
+  {
+   "id": 36,
+   "start": 99.069,
+   "cam": 2,
+   "note": "FULL LINE PLATFORM"
+  },
+  {
+   "id": 37,
+   "start": 101.209,
+   "cam": 1,
+   "note": "MCU TATE + DANCERS"
+  },
+  {
+   "id": 38,
+   "start": 104.809,
+   "cam": 2,
+   "note": "FULL LINE FLARES"
+  },
+  {
+   "id": 39,
+   "start": 108.919,
+   "cam": 7,
+   "note": "TATE PROFILE THRU HAZE"
+  },
+  {
+   "id": 40,
+   "start": 111.089,
+   "cam": 7,
+   "note": "TATE + DANCERS FROM HOUSE"
+  },
+  {
+   "id": 41,
+   "start": 113.119,
+   "cam": 2,
+   "note": "FULL LINE ARMS UP"
+  },
+  {
+   "id": 42,
+   "start": 115.759,
+   "cam": 1,
+   "note": "MCU TATE SINGING"
+  },
+  {
+   "id": 43,
+   "start": 117.059,
+   "cam": 2,
+   "note": "FS GROUP W/ TATE"
+  },
+  {
+   "id": 44,
+   "start": 119.129,
+   "cam": 1,
+   "note": "CU TATE HAIR FLIP SOFT FG"
+  },
+  {
+   "id": 45,
+   "start": 123.199,
+   "cam": 6,
+   "note": "DANCERS ON RUNWAY FLOOR"
+  },
+  {
+   "id": 46,
+   "start": 126.629,
+   "cam": 5,
+   "note": "LOW TATE OVER DANCERS ON FLOOR"
+  },
+  {
+   "id": 47,
+   "start": 138.809,
+   "cam": 8,
+   "note": "THRU DANCERS > TATE RUNWAY WALK > ORBIT"
+  }
+ ],
+ "tracks": [
+  {
+   "id": 1,
+   "name": "Lyrics 1",
+   "kind": "lyrics",
+   "items": []
+  },
+  {
+   "id": 2,
+   "name": "Staging",
+   "kind": "note",
+   "items": [
+    {
+     "id": 1,
+     "start": 0,
+     "text": "Dark open, crane through dancers"
+    },
+    {
+     "id": 2,
+     "start": 17.859,
+     "text": "Stage reveal: dancers on platform, warm backdrop"
+    },
+    {
+     "id": 3,
+     "start": 72.349,
+     "text": "Formation down runway"
+    },
+    {
+     "id": 4,
+     "start": 79.649,
+     "text": "Blue SL spot"
+    },
+    {
+     "id": 5,
+     "start": 123.199,
+     "text": "Dancers drop to runway floor"
+    },
+    {
+     "id": 6,
+     "start": 138.809,
+     "text": "Tate walks runway to end"
+    },
+    {
+     "id": 7,
+     "start": 169.439,
+     "text": "Out: transition to Dear God"
+    }
+   ]
+  }
+ ]
+}

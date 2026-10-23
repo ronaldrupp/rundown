@@ -1,0 +1,6 @@
+node_modules/
+dist/
+# downloaded videos are third-party copyrighted content
+media/
+.DS_Store
+.claude/
