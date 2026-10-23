@@ -8,6 +8,8 @@ Built with Vue 3 and Vite. No backend except a small dev-server endpoint for dow
 
 ## Screenshots
 
+Both screenshots show the example rundown for Tate McRae's "Housewife" ([see below](#example-reverse-engineered-shot-list)).
+
 **Editor**: shot info, camera buttons, program monitor and the track timeline.
 
 ![Editor](docs/editor.png)
@@ -15,6 +17,8 @@ Built with Vue 3 and Vite. No backend except a small dev-server endpoint for dow
 **LIVE**: the shot waterfall with sliding duration bars, per-camera countdowns, and the program monitor with a NOW/NEXT bar.
 
 ![LIVE view](docs/live.png)
+
+<sub>Video frames: Tate McRae – 2026 Victoria's Secret Fashion Show Performance, © 2026 RCA Records / Sony Music Entertainment. Shown as reduced UI screenshots for illustration only.</sub>
 
 ## Features
 
@@ -53,8 +57,18 @@ brew install yt-dlp ffmpeg
 | `1`–`9`, `0` | Cut to camera 1–10 at the playhead |
 | `←` / `→` | Jump one bar |
 | `Home` | Back to start |
-| `L` | Toggle LIVE mode (or open `/#live`) |
+| `L` | Toggle LIVE mode |
 | Mouse wheel on timeline | Scrub |
+
+## Deep links
+
+Open a rundown at a moment, optionally in LIVE mode:
+
+```
+http://localhost:5173/#live&show=Tate%20McRae%20%E2%80%93%20Housewife&t=86.2
+```
+
+`show` is the name shown in the **Open…** menu, and `t` is the time in seconds.
 
 ## Rundown format
 

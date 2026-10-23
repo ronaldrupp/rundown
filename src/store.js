@@ -136,7 +136,7 @@ export function loadShow(name) {
   audio.removeAttribute('src'); audio.load()
   Object.assign(clock, { now: 0, audioName: '', peaks: null, hasVideo: false })
   Object.assign(show, structuredClone(rundowns[name]))
-  loadMedia()
+  return loadMedia()
 }
 
 // self-check

@@ -3,7 +3,11 @@ import { ref, onMounted, onUnmounted } from 'vue'
 import { show, clock, toggle, seek, tc, parseTc, addCue, snapBeat, spb, rundowns, loadShow } from './store'
 import Rundown from './Rundown.vue'
 
-const view = ref(location.hash === '#live' ? 'live' : 'rundown') // #live deep-links to LIVE mode
+// deep link: #live&show=<rundown name>&t=<seconds>
+const link = new URLSearchParams(location.hash.slice(1))
+const view = ref(link.has('live') ? 'live' : 'rundown')
+if (rundowns[link.get('show')]) loadShow(link.get('show')).then(() => link.has('t') && seek(+link.get('t')))
+else if (link.has('t')) seek(+link.get('t'))
 
 // keys: space = play/pause, 1-9/0 = record a cut to that camera at the playhead, arrows = nudge one bar
 function onKey(e) {
