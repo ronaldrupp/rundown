@@ -7,29 +7,77 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		66861BB46A7D932123657DF1 /* Sync.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC47D31C13618AB755E62CB8 /* Sync.swift */; };
-		859E21F9A5EDA7F6BDDD12BF /* CamView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 385102EFC5477C2A53F230B1 /* CamView.swift */; };
-		CC5DB861311F2A40EB364332 /* CamOpApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 707CC0FEDEA8715C9861742A /* CamOpApp.swift */; };
+		164F4D1D0CCA76D62590A9CF /* Format.swift in Sources */ = {isa = PBXBuildFile; fileRef = FFC36EA61EA60024BE3797FA /* Format.swift */; };
+		65A9A0676C55764506AFAAA8 /* Plan.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8ABFB2A710E4797BEF5AC0BF /* Plan.swift */; };
+		66004031ECD27680DC92F6E6 /* MyShotRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58C74039C095C9B9C7669376 /* MyShotRow.swift */; };
+		6B02A66D64B862C399E6C204 /* DirectorRemote.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF02C48939352864697C04CA /* DirectorRemote.swift */; };
+		742831CF3EB7941525703E06 /* Waterfall.swift in Sources */ = {isa = PBXBuildFile; fileRef = 143F3373B0D67ED357D4BB92 /* Waterfall.swift */; };
+		90DBE6752C8336B82B26EE0E /* TallyFrame.swift in Sources */ = {isa = PBXBuildFile; fileRef = 507AAFF433A148299F193923 /* TallyFrame.swift */; };
+		92266D3732403E7A331D8089 /* CamOpApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE273DBF58045C5D8F854D5A /* CamOpApp.swift */; };
+		B6B4B11121821CDC07F47CC8 /* SettingsSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = F52C019094638581E60A2314 /* SettingsSheet.swift */; };
+		BE0DD6DF42DAC1DD5F1C02AB /* ShotRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 687250AF88B3295917FFC1F7 /* ShotRow.swift */; };
+		D07DDFB194DFD34D04B0A3D6 /* Sync.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A0EDE62B7572C0054BD6D86 /* Sync.swift */; };
+		D6D330D94C73BA6F647B78A3 /* ShotNotes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6210CBE8E0CF01B58C1C4544 /* ShotNotes.swift */; };
+		DF69AC8C1794D6783E7A87F7 /* Pips.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6CC7FE5C4920680180E1F375 /* Pips.swift */; };
+		E2735A809485EF5B9CB058ED /* LiveScroll.swift in Sources */ = {isa = PBXBuildFile; fileRef = 063EE30E7287A0A465F241B1 /* LiveScroll.swift */; };
+		F77D845A89285D3E47C27CD4 /* CamView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C33ADEC334F65B598D88F105 /* CamView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		15622B38DD3897CF8296FFFE /* CamOp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CamOp.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		385102EFC5477C2A53F230B1 /* CamView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CamView.swift; sourceTree = "<group>"; };
-		707CC0FEDEA8715C9861742A /* CamOpApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CamOpApp.swift; sourceTree = "<group>"; };
+		063EE30E7287A0A465F241B1 /* LiveScroll.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveScroll.swift; sourceTree = "<group>"; };
+		143F3373B0D67ED357D4BB92 /* Waterfall.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Waterfall.swift; sourceTree = "<group>"; };
+		15622B38DD3897CF8296FFFE /* CamOp.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = CamOp.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		507AAFF433A148299F193923 /* TallyFrame.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TallyFrame.swift; sourceTree = "<group>"; };
+		58C74039C095C9B9C7669376 /* MyShotRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MyShotRow.swift; sourceTree = "<group>"; };
+		6210CBE8E0CF01B58C1C4544 /* ShotNotes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShotNotes.swift; sourceTree = "<group>"; };
+		687250AF88B3295917FFC1F7 /* ShotRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShotRow.swift; sourceTree = "<group>"; };
+		6CC7FE5C4920680180E1F375 /* Pips.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Pips.swift; sourceTree = "<group>"; };
+		8ABFB2A710E4797BEF5AC0BF /* Plan.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Plan.swift; sourceTree = "<group>"; };
+		9A0EDE62B7572C0054BD6D86 /* Sync.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sync.swift; sourceTree = "<group>"; };
 		B0FF1B740C8DE96C973F651F /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
-		CC47D31C13618AB755E62CB8 /* Sync.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sync.swift; sourceTree = "<group>"; };
+		C33ADEC334F65B598D88F105 /* CamView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CamView.swift; sourceTree = "<group>"; };
+		CF02C48939352864697C04CA /* DirectorRemote.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DirectorRemote.swift; sourceTree = "<group>"; };
+		EE273DBF58045C5D8F854D5A /* CamOpApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CamOpApp.swift; sourceTree = "<group>"; };
+		F52C019094638581E60A2314 /* SettingsSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsSheet.swift; sourceTree = "<group>"; };
+		FFC36EA61EA60024BE3797FA /* Format.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Format.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
+		1988CC9119217F6C11676240 /* Support */ = {
+			isa = PBXGroup;
+			children = (
+				FFC36EA61EA60024BE3797FA /* Format.swift */,
+				6CC7FE5C4920680180E1F375 /* Pips.swift */,
+			);
+			path = Support;
+			sourceTree = "<group>";
+		};
 		2881F97C9EE97A03E774E264 /* CamOp */ = {
 			isa = PBXGroup;
 			children = (
-				707CC0FEDEA8715C9861742A /* CamOpApp.swift */,
-				385102EFC5477C2A53F230B1 /* CamView.swift */,
 				B0FF1B740C8DE96C973F651F /* Info.plist */,
-				CC47D31C13618AB755E62CB8 /* Sync.swift */,
+				D8BE1082A1D4F0967B6CA701 /* App */,
+				429899226389FAF09194BC27 /* Model */,
+				1988CC9119217F6C11676240 /* Support */,
+				33C9982D00F1D6E990428DDA /* Views */,
 			);
 			path = CamOp;
+			sourceTree = "<group>";
+		};
+		33C9982D00F1D6E990428DDA /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				C33ADEC334F65B598D88F105 /* CamView.swift */,
+				CF02C48939352864697C04CA /* DirectorRemote.swift */,
+				063EE30E7287A0A465F241B1 /* LiveScroll.swift */,
+				58C74039C095C9B9C7669376 /* MyShotRow.swift */,
+				F52C019094638581E60A2314 /* SettingsSheet.swift */,
+				6210CBE8E0CF01B58C1C4544 /* ShotNotes.swift */,
+				687250AF88B3295917FFC1F7 /* ShotRow.swift */,
+				507AAFF433A148299F193923 /* TallyFrame.swift */,
+				143F3373B0D67ED357D4BB92 /* Waterfall.swift */,
+			);
+			path = Views;
 			sourceTree = "<group>";
 		};
 		413A20A27C069C425572D333 /* Products */ = {
@@ -38,6 +86,23 @@
 				15622B38DD3897CF8296FFFE /* CamOp.app */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		429899226389FAF09194BC27 /* Model */ = {
+			isa = PBXGroup;
+			children = (
+				8ABFB2A710E4797BEF5AC0BF /* Plan.swift */,
+				9A0EDE62B7572C0054BD6D86 /* Sync.swift */,
+			);
+			path = Model;
+			sourceTree = "<group>";
+		};
+		D8BE1082A1D4F0967B6CA701 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				EE273DBF58045C5D8F854D5A /* CamOpApp.swift */,
+			);
+			path = App;
 			sourceTree = "<group>";
 		};
 		E81BADCD8BAD58C192F6B2FA = {
@@ -101,9 +166,20 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				CC5DB861311F2A40EB364332 /* CamOpApp.swift in Sources */,
-				859E21F9A5EDA7F6BDDD12BF /* CamView.swift in Sources */,
-				66861BB46A7D932123657DF1 /* Sync.swift in Sources */,
+				92266D3732403E7A331D8089 /* CamOpApp.swift in Sources */,
+				F77D845A89285D3E47C27CD4 /* CamView.swift in Sources */,
+				6B02A66D64B862C399E6C204 /* DirectorRemote.swift in Sources */,
+				164F4D1D0CCA76D62590A9CF /* Format.swift in Sources */,
+				E2735A809485EF5B9CB058ED /* LiveScroll.swift in Sources */,
+				66004031ECD27680DC92F6E6 /* MyShotRow.swift in Sources */,
+				DF69AC8C1794D6783E7A87F7 /* Pips.swift in Sources */,
+				65A9A0676C55764506AFAAA8 /* Plan.swift in Sources */,
+				B6B4B11121821CDC07F47CC8 /* SettingsSheet.swift in Sources */,
+				D6D330D94C73BA6F647B78A3 /* ShotNotes.swift in Sources */,
+				BE0DD6DF42DAC1DD5F1C02AB /* ShotRow.swift in Sources */,
+				D07DDFB194DFD34D04B0A3D6 /* Sync.swift in Sources */,
+				90DBE6752C8336B82B26EE0E /* TallyFrame.swift in Sources */,
+				742831CF3EB7941525703E06 /* Waterfall.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -234,7 +310,6 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				DEVELOPMENT_TEAM = QZZ3RS4AT2;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = CamOp/Info.plist;
 				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "Connects to the director's rundown server on your network.";
@@ -255,7 +330,6 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				DEVELOPMENT_TEAM = QZZ3RS4AT2;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = CamOp/Info.plist;
 				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "Connects to the director's rundown server on your network.";
