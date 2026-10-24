@@ -1,27 +1,38 @@
 import { reactive, watch } from 'vue'
 import { show, clock, audio } from './store'
 
-// LAN sync over Vite's dev-server websocket: the director window publishes the rundown and clock,
-// camera operator views follow. shortcut: dev-server only, last writer wins; a real show needs its own sync server
+// LAN sync over Vite's dev-server websocket: director windows publish the rundown and clock,
+// camera operator views follow exactly one of them. shortcut: dev-server only; a real show needs its own sync server
 const hot = import.meta.hot
 const plain = o => JSON.parse(JSON.stringify(o))
-export const link = reactive({ last: 0 }) // when a follower last heard the director (performance.now ms)
+const me = Math.random().toString(36).slice(2, 10) // identifies this window's messages
+// last: when a follower last heard its director; others: when a director last heard another director (performance.now ms)
+export const link = reactive({ last: 0, others: 0 })
 
 export function publish() {
   if (!hot) return
-  const sendShow = () => hot.send('rundown:show', plain(show))
+  const sendShow = () => hot.send('rundown:show', { id: me, show: plain(show) })
   watch(show, sendShow, { deep: true })
-  hot.on('rundown:hello', sendShow) // a camera view just connected
+  hot.on('rundown:hello', sendShow) // a camera view just connected or picked a director
+  hot.on('rundown:clock', c => { if (c.id !== me) link.others = performance.now() })
   // read the media clock directly: rAF (and so clock.now) stops while this window is in the background
-  setInterval(() => hot.send('rundown:clock', { now: audio.src ? audio.currentTime : clock.now, playing: clock.playing }), 100)
+  setInterval(() => hot.send('rundown:clock', { id: me, now: audio.src ? audio.currentTime : clock.now, playing: clock.playing }), 100)
 }
 
 export function follow() {
   if (!hot) return
-  hot.on('rundown:show', s => Object.assign(show, s))
+  let leader = null, leaderPlaying = false
+  hot.on('rundown:show', m => { if (!leader || m.id === leader) Object.assign(show, m.show) })
   hot.on('rundown:clock', c => {
-    link.last = performance.now()
-    clock.playing = c.playing
+    const t = performance.now()
+    // stick with one director; switch only if it went silent or a newcomer plays while it is paused
+    if (c.id !== leader) {
+      if (leader && t - link.last < 1500 && !(c.playing && !leaderPlaying)) return
+      leader = c.id
+      hot.send('rundown:hello') // ask for the rundown; only the new leader's copy is accepted
+    }
+    link.last = t
+    leaderPlaying = clock.playing = c.playing
     // glide toward the director's time while playing instead of snapping back every 100ms; jump on seeks
     const drift = c.now - clock.now
     clock.now = c.playing && Math.abs(drift) < 0.25 ? clock.now + drift * 0.3 : c.now

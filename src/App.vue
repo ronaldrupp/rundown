@@ -1,7 +1,7 @@
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
 import { show, clock, toggle, seek, tc, parseTc, addCue, snapBeat, spb, rundowns, loadShow, loadMedia, undo, redo } from './store'
-import { publish, follow } from './sync'
+import { publish, follow, link as syncLink } from './sync'
 import Rundown from './Rundown.vue'
 import CamView from './CamView.vue'
 
@@ -16,6 +16,10 @@ else {
   if (rundowns[link.get('show')]) loadShow(link.get('show')).then(() => link.has('t') && seek(+link.get('t')))
   else loadMedia().then(() => link.has('t') && seek(+link.get('t')))
 }
+
+// warn when another director window publishes too: camera views can only follow one
+const otherDirector = ref(false)
+if (!cam) setInterval(() => (otherDirector.value = performance.now() - syncLink.others < 2000), 1000)
 
 // keys: space = play/pause, 1-9/0 = record a cut to that camera at the playhead, arrows = nudge one bar
 function onKey(e) {
@@ -52,6 +56,7 @@ onUnmounted(() => removeEventListener('keydown', onKey))
       <div><input class="mono" :value="tc(show.tcOffset)" @change="show.tcOffset = parseTc($event.target.value) ?? show.tcOffset" aria-label="Start timecode" />
         <small>{{ Math.floor(show.duration / 60) }}:{{ String(Math.floor(show.duration % 60)).padStart(2, '0') }}</small></div>
     </div>
+    <span v-if="otherDirector" class="warn" title="Another director window is open on this dev server. Camera views follow only one director, so close the others.">⚠ Another director is open</span>
     <button class="live" :class="{ on: view === 'live' }" @click="view = view === 'live' ? 'rundown' : 'live'">LIVE</button>
   </header>
   <main>
@@ -85,6 +90,8 @@ header input:focus { outline: 1px solid #444; }
 .ltc { display: flex; align-items: center; gap: 10px; }
 .ltc div { display: flex; flex-direction: column; align-items: center; font-size: 13px; }
 .ltc input { width: 7em; text-align: center; color: var(--dim); }
+header .warn { margin-left: auto; color: #f5a524; font-size: 12px; font-weight: 600; }
+header .warn + button.live { margin-left: 0; }
 button.live { margin-left: auto; padding: 6px 14px; font-weight: 600; background: #2a2a2a; }
 button.live.on { background: var(--red); color: #fff; }
 main { flex: 1; min-height: 0; overflow: auto; }
