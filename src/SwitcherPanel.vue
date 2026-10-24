@@ -29,7 +29,7 @@ defineEmits(['close'])
         </div>
       </div>
     </template>
-    <p class="hint">Cuts are sent while the rundown plays. {{ sw.kind === 'obs' ? 'OBS: Tools → WebSocket Server Settings.' : sw.kind === 'vmix' ? 'vMix: Settings → Web Controller.' : '' }}</p>
+    <p class="hint">Cuts are sent while the rundown plays. {{ sw.kind === 'obs' ? 'OBS: Tools → WebSocket Server Settings. Connecting sets the OBS transition to Cut.' : sw.kind === 'vmix' ? 'vMix: Settings → Web Controller.' : '' }}</p>
   </div>
 </template>
 

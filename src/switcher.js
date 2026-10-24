@@ -12,7 +12,7 @@ watch(() => ({ kind: sw.kind, obsUrl: sw.obsUrl, vmixUrl: sw.vmixUrl, preview: s
 // OBS scene name or vMix input (number or name) for a camera
 export const target = cam => sw.map[cam] || `CAM ${cam}`
 
-let ws = null, reqId = 0
+let ws = null, reqId = 0, sentCam = null, sentNext = null
 const b64sha256 = async s => btoa(String.fromCharCode(...new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s)))))
 
 export function connect() {
@@ -27,15 +27,22 @@ export function connect() {
     if (m.op === 0) { // Hello: answer with Identify, solving the auth challenge if OBS asks for one
       const a = m.d.authentication
       const authentication = a && (await b64sha256((await b64sha256(sw.password + a.salt)) + a.challenge))
-      sock.send(JSON.stringify({ op: 1, d: { rpcVersion: 1, ...(a && { authentication }) } }))
-    } else if (m.op === 2) sw.status = 'connected'
+      // subscribe to scene events (bit 2) to re-arm preview after OBS swaps scenes
+      sock.send(JSON.stringify({ op: 1, d: { rpcVersion: 1, eventSubscriptions: 4, ...(a && { authentication }) } }))
+    } else if (m.op === 2) {
+      sw.status = 'connected'
+      obs('SetCurrentSceneTransition', { transitionName: 'Cut' }) // planned cuts are hard cuts, not fades
+    } else if (m.op === 5 && m.d.eventType === 'CurrentProgramSceneChanged' && sw.preview && sentNext != null) {
+      // in Studio Mode OBS moves the old program into preview after each cut; put the next shot back
+      preview(sentNext)
+    }
     else if (m.op === 7 && !m.d.requestStatus.result) sw.status = `error: ${m.d.requestStatus.comment}`
   }
   sock.onclose = e => { if (ws === sock) sw.status = e.code === 4009 ? 'error: wrong password' : 'disconnected' }
 }
 
 function obs(requestType, requestData) {
-  if (ws?.readyState === WebSocket.OPEN && sw.status !== 'connecting') ws.send(JSON.stringify({ op: 6, d: { requestType, requestId: String(++reqId), requestData } }))
+  if (ws?.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ op: 6, d: { requestType, requestId: String(++reqId), requestData } }))
 }
 // vMix sends no CORS headers, so calls are fire-and-forget
 const vmix = (fn, input) => fetch(`${sw.vmixUrl}/api/?Function=${fn}&Input=${encodeURIComponent(input)}`, { mode: 'no-cors' }).catch(() => (sw.status = 'error: vMix unreachable'))
@@ -44,10 +51,12 @@ export function take(cam) { sw.kind === 'obs' ? obs('SetCurrentProgramScene', { 
 function preview(cam) { sw.kind === 'obs' ? obs('SetCurrentPreviewScene', { sceneName: target(cam) }) : sw.kind === 'vmix' && vmix('PreviewInput', target(cam)) }
 
 // cut whenever the on-air camera changes during playback; resync on the next play after a pause
-let sentCam = null, sentNext = null
 watch(() => [liveIdx.value, clock.playing, sw.kind], () => {
   if (sw.kind === 'off' || !clock.playing) return (sentCam = sentNext = null)
   const live = cues.value[liveIdx.value], next = cues.value[liveIdx.value + 1]
   if (live && live.cam !== sentCam) take((sentCam = live.cam))
   if (sw.preview && next && next.cam !== sentNext) preview((sentNext = next.cam))
 })
+
+// reconnect to the mixer chosen last time (an OBS password has to be entered again)
+if (sw.kind !== 'off') connect()

@@ -38,7 +38,7 @@ function tick(ts) {
 }
 requestAnimationFrame(tick)
 
-export function play() { clock.playing = true; if (audio.src) audio.play() }
+export function play() { clock.playing = true; if (audio.src) audio.play().catch(() => (clock.playing = false)) } // e.g. blocked without a user click
 export function pause() { clock.playing = false; audio.pause() }
 export const toggle = () => (clock.playing ? pause() : play())
 export function seek(t) { clock.now = Math.max(0, Math.min(t, show.duration)); if (audio.src) audio.currentTime = clock.now }
@@ -59,6 +59,7 @@ export async function loadAudio(file, name = file.name) {
     return m
   })
   seek(0)
+  if (clock.playing) audio.play().catch(() => (clock.playing = false)) // play was pressed while the media was still loading
 }
 
 export async function loadYoutube(url) {
