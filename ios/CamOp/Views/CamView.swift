@@ -7,6 +7,9 @@ struct CamView: View {
   @AppStorage("waterfall") private var waterfall = true
   @AppStorage("remote") private var remote = false // director remote instead of a camera
   @AppStorage("pips") private var pips = true
+  @AppStorage("code") private var code = "" // the director's join code
+  // shortcut: the director login token sits in UserDefaults; move it to the Keychain before the app ships beyond the crew
+  @AppStorage("token") private var token = ""
   @State private var settings = false
   @State private var picked: Plan.Shot? // shot open in the notes sheet
   @Environment(\.verticalSizeClass) private var vSize // compact: phone held sideways
@@ -49,6 +52,11 @@ struct CamView: View {
               }
               }
               }
+            } else if query.isEmpty || sync.denied {
+              ContentUnavailableView(remote ? "Sign in as director" : sync.denied ? "Join code not accepted" : "Enter the join code",
+                                     systemImage: remote ? "person.badge.key" : "number",
+                                     description: Text(remote ? "The director remote needs the director's login. Open Settings to sign in."
+                                                       : "Ask the director for the current join code and enter it in Settings."))
             } else {
               ContentUnavailableView("Waiting for the director", systemImage: "antenna.radiowaves.left.and.right",
                                      description: Text("Start the director view on \(host)"))
@@ -63,9 +71,15 @@ struct CamView: View {
       .onChange(of: onAir) { _, on in if on && sync.playing { cue(1500, ms: 400) } }
       .onChange(of: n) { _, n in if let n, (1...3).contains(n) { cue(1000, ms: 90) } }
     }
-    .task(id: host) { await sync.run(host: host) }
+    .task(id: "\(host) \(query)") { if !query.isEmpty { await sync.run(host: host, query: query) } }
     .sheet(item: $picked) { s in ShotNotes(s: s, cam: sync.show?.cams.first { $0.id == s.cam }, show: sync.show?.title ?? "") }
-    .sheet(isPresented: $settings) { SettingsSheet(host: $host, remote: $remote) }
+    .sheet(isPresented: $settings) { SettingsSheet(host: $host, code: $code, token: $token, remote: $remote) }
+  }
+
+  // how this device connects: the remote with the director's login, a camera with the join code; empty: not set up yet
+  private var query: String {
+    if remote { return token.isEmpty ? "" : "token=\(token)&role=remote" }
+    return code.isEmpty ? "" : "code=\(code.addingPercentEncoding(withAllowedCharacters: .alphanumerics) ?? "")"
   }
 
   private func cue(_ freq: Double, ms: Double) {

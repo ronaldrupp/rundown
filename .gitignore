@@ -6,3 +6,5 @@ media/
 .claude/
 ios/build/
 xcuserdata/
+# director accounts, sessions and rundowns (SQLite)
+data/
