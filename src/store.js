@@ -30,13 +30,17 @@ export const clock = reactive({ now: 0, playing: false, audioName: '', peaks: nu
 export const audio = document.createElement('video')
 audio.playsInline = true
 let last = performance.now()
-function tick(ts) {
+function update() {
+  const ts = performance.now()
   if (clock.playing) clock.now = audio.src ? audio.currentTime : Math.min(clock.now + (ts - last) / 1000, show.duration)
   if (clock.now >= show.duration) clock.playing = false
   last = ts
-  requestAnimationFrame(tick)
 }
-requestAnimationFrame(tick)
+// rAF keeps the display smooth; the timer keeps cuts (switcher, caller, sync) going when the window is
+// covered or in the background, where browsers stop rAF but keep timers running for pages playing audio
+const frame = () => { update(); requestAnimationFrame(frame) }
+requestAnimationFrame(frame)
+setInterval(update, 20)
 
 export function play() { clock.playing = true; if (audio.src) audio.play().catch(() => (clock.playing = false)) } // e.g. blocked without a user click
 export function pause() { clock.playing = false; audio.pause() }
