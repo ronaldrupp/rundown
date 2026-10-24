@@ -1,5 +1,5 @@
 import { reactive, watch } from 'vue'
-import { show, clock, audio } from './store'
+import { show, clock, audio, play, pause, seek } from './store'
 
 // LAN sync over Vite's dev-server websocket: director windows publish the rundown and clock,
 // camera operator views follow exactly one of them. shortcut: dev-server only; a real show needs its own sync server
@@ -15,6 +15,12 @@ export function publish() {
   watch(show, sendShow, { deep: true })
   hot.on('rundown:hello', sendShow) // a camera view just connected or picked a director
   hot.on('rundown:clock', c => { if (c.id !== me) link.others = performance.now() })
+  // transport from a remote (the iPad app's director mode); anyone on the LAN can send this, like the rest of the sync
+  hot.on('rundown:control', m => {
+    if (m?.cmd === 'play') play()
+    else if (m?.cmd === 'pause') pause()
+    else if (m?.cmd === 'seek' && Number.isFinite(m.t)) seek(m.t)
+  })
   // read the media clock directly: rAF (and so clock.now) stops while this window is in the background
   setInterval(() => hot.send('rundown:clock', { id: me, now: audio.src ? audio.currentTime : clock.now, playing: clock.playing }), 100)
 }

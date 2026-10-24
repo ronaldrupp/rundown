@@ -4,3 +4,5 @@ dist/
 media/
 .DS_Store
 .claude/
+ios/build/
+xcuserdata/

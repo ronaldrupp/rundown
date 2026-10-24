@@ -46,6 +46,7 @@ It follows the director's window live.
   - a program monitor with a timecode/shot overlay and a NOW/NEXT bar with a progress bar
   - a draggable divider between the list and the video
 - **Camera operator view**: `/#cam=3` on a tablet or phone shows the cut flow, this camera's countdown bar (ON AIR / STANDBY / NEXT IN) and its own shots with repositioning time. It has an optional spoken "3, 2, 1" and a sync indicator, and follows the director's window live.
+- **iPhone and iPad app**: a native camera operator view, and a director remote with play, pause and seek ([see below](#iphone-and-ipad-app)).
 - **Switcher output**: sends the planned cuts to **OBS** (WebSocket v5, with password) or **vMix** (HTTP API) while the rundown plays, and optionally the next shot to preview.
 - **Caller**: a spoken PA call at each cut ("Five. Next, three.") and a "3, 2, 1" count before longer shots, one voice at a time.
 - **Media**: load a local audio file or a reference video. The video drives the show clock, so picture and UI never drift apart.
@@ -94,6 +95,26 @@ http://<your-mac's-ip>:5173/#cam=3
 The director's window (the normal view) publishes the rundown and clock about 10 times a second over the dev server's WebSocket. Camera views only follow. Keep the director's window in front: browsers slow down background tabs, which pauses the clock updates.
 
 `dev:lan` makes the whole dev server, including the YouTube download endpoint, reachable from your local network. Only use it on networks you trust.
+
+## iPhone and iPad app
+
+`ios/` holds a native SwiftUI app (iOS 26, Liquid Glass) that follows the director's window over the same WebSocket as the browser camera views. The web director stays the host. The app has two modes, chosen in its settings:
+
+- **Camera**: the waterfall from the browser camera view, or a card layout with a big countdown. A red glow around the screen edge shows the moment this camera is on air.
+- **Director remote**: for a director on the move with an iPad. It shows what is on air and next, plus the whole cut flow. Play, pause, jump one bar, or tap a shot to jump there. The director's browser window carries out each command.
+
+Both shot lists scroll on their own, and **Back to live** returns them to the shot on air.
+
+<p>
+<img src="docs/ios-camera.png" alt="iPhone camera view: waterfall with camera 1 on air and a red glow around the screen" width="260">
+<img src="docs/ios-ipad-director.png" alt="iPad director remote: on air and next cards, the cut flow and play controls" width="440">
+</p>
+
+<sub>Left: camera 1 on air on an iPhone 17 Pro. Right: director remote on an iPad Pro 11".</sub>
+
+Open `ios/CamOp.xcodeproj` in Xcode 26 or later, pick your team under *Signing & Capabilities*, and run it. In the app's settings, enter your Mac's address, for example `192.168.1.10:5173`, with the dev server started via `npm run dev:lan`. iOS asks for local network access the first time. The Xcode project is generated from `ios/project.yml` with [XcodeGen](https://github.com/yonaskolb/XcodeGen) (`cd ios && xcodegen generate`).
+
+Like the browser views, the app trusts anyone on the network: the remote's play, pause and seek commands are not authenticated.
 
 ## Switcher output
 

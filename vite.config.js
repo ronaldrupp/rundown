@@ -35,7 +35,7 @@ const youtube = {
 const sync = {
   name: 'rundown-sync',
   configureServer(server) {
-    for (const ev of ['rundown:show', 'rundown:clock', 'rundown:hello']) server.ws.on(ev, data => server.ws.send(ev, data))
+    for (const ev of ['rundown:show', 'rundown:clock', 'rundown:hello', 'rundown:control']) server.ws.on(ev, data => server.ws.send(ev, data))
   },
 }
 
