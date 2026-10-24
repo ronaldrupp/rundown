@@ -35,21 +35,36 @@ const timer = setInterval(() => (tick.value = performance.now()), 500)
 onUnmounted(() => clearInterval(timer))
 const connected = computed(() => tick.value - link.last < 1500)
 
-// optional spoken "3, 2, 1" before this camera's cuts; one voice, newest call wins
-const voice = ref(false)
+// optional countdown pips before this camera's cuts: short at 3, 2, 1, long at the cut
+const beeps = ref(false)
+let ctx = null
+function toggleBeeps() {
+  beeps.value = !beeps.value
+  // browsers only allow audio after a user gesture, so the context starts on this tap
+  if (beeps.value) (ctx ??= new AudioContext()).resume()
+}
+function pip(freq, ms) {
+  if (!ctx) return
+  const t = ctx.currentTime, end = t + ms / 1000, o = ctx.createOscillator(), g = ctx.createGain()
+  o.frequency.value = freq
+  g.gain.setValueAtTime(0.0001, t)
+  g.gain.exponentialRampToValueAtTime(0.5, t + 0.005) // short ramps avoid clicks
+  g.gain.setValueAtTime(0.5, end - 0.015)
+  g.gain.exponentialRampToValueAtTime(0.0001, end)
+  o.connect(g).connect(ctx.destination)
+  o.start(t); o.stop(end + 0.01)
+}
 let lastN = null
 watch(left, t => {
   const n = t == null ? null : Math.ceil(t)
-  if (voice.value && clock.playing && !onAir.value && n >= 1 && n <= 3 && n !== lastN) {
-    speechSynthesis.cancel()
-    speechSynthesis.speak(Object.assign(new SpeechSynthesisUtterance(String(n)), { rate: 1.2 }))
-  }
+  if (beeps.value && clock.playing && !onAir.value && n >= 1 && n <= 3 && n !== lastN) pip(1000, 90)
   lastN = n
 })
+watch(onAir, (on, was) => { if (on && !was && beeps.value && clock.playing) pip(1500, 400) })
 </script>
 
 <template>
-  <div class="cv">
+  <div class="cv" :class="{ onair: onAir }">
     <header>
       <span class="sno">{{ show.songNo }}</span>
       <div class="song"><b>{{ show.title }}</b><small>{{ show.artist }}</small></div>
@@ -66,7 +81,7 @@ watch(left, t => {
     </section>
 
     <div class="me" :class="{ onair: onAir, stby: standby }">
-      <button class="spk" :aria-pressed="voice" @click="voice = !voice" :title="voice ? 'Spoken countdown on' : 'Spoken countdown off'">{{ voice ? '🔊' : '🔈' }}</button>
+      <button class="spk" :aria-pressed="beeps" @click="toggleBeeps" :title="beeps ? 'Countdown pips on' : 'Countdown pips off'">{{ beeps ? '🔊' : '🔈' }}</button>
       <span class="mnum" :style="{ background: me.color }">{{ cam }}</span>
       <span class="count">{{ left == null ? '—' : Math.ceil(left) }}</span>
       <span class="track"><i :style="{ width: left == null ? 0 : pct(Math.min(left, WINDOW)) }"></i></span>
@@ -92,7 +107,9 @@ watch(left, t => {
 </template>
 
 <style scoped>
-.cv { height: 100%; display: flex; flex-direction: column; background: #000; color: #eee; user-select: none; }
+.cv { position: relative; height: 100%; display: flex; flex-direction: column; background: #000; color: #eee; user-select: none; }
+/* tally frame drawn on top of everything, so row backgrounds can't cover it */
+.cv.onair::after { content: ''; position: absolute; inset: 0; border: 6px solid #ff1a1a; pointer-events: none; z-index: 5; }
 header { display: flex; align-items: center; gap: 12px; padding: 8px 14px; background: #141414; flex: none; }
 .sno { font-size: 22px; color: #999; min-width: 28px; text-align: center; }
 .song { flex: 1; min-width: 0; display: flex; flex-direction: column; line-height: 1.2; }
@@ -130,5 +147,5 @@ footer { display: flex; align-items: center; gap: 12px; padding: 8px 14px; backg
 .time { font-size: 20px; font-weight: 600; font-variant-numeric: tabular-nums; }
 .prog { flex: 1; height: 6px; background: #333; position: relative; }
 .prog i { position: absolute; left: 0; top: 0; bottom: 0; background: #7fb2e5; }
-.tc { font: 13px ui-monospace, monospace; color: #999; }
+.tc { font-size: 13px; color: #999; }
 </style>

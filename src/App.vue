@@ -65,7 +65,7 @@ onUnmounted(() => removeEventListener('keydown', onKey))
 :root { --bg: #000; --panel: #141414; --line: #2a2a2a; --text: #e6e9ef; --dim: #8a93a3; --red: #e5484d; color-scheme: dark; }
 * { box-sizing: border-box; }
 html, body, #app { margin: 0; height: 100%; }
-body { background: var(--bg); color: var(--text); font: 14px/1.4 system-ui, sans-serif; }
+body { background: var(--bg); color: var(--text); font: 14px/1.4 'Inter Variable', Inter, system-ui, sans-serif; font-variant-numeric: tabular-nums; }
 #app { display: flex; flex-direction: column; }
 header { display: flex; align-items: center; gap: 24px; padding: 6px 16px; background: #1c1c1c; border-bottom: 1px solid #000; }
 header input { background: none; border: 0; padding: 0; }

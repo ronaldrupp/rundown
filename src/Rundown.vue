@@ -245,8 +245,8 @@ aside { display: flex; flex-direction: column; background: #121212; border-right
 .row { display: flex; align-items: center; gap: 8px; }
 .card input, .card select { background: #0003; border: 1px solid #fff3; color: #fff; }
 .card .shotname { flex: 1; font-weight: 600; text-transform: uppercase; }
-.card .tc { width: 8.5em; font-family: ui-monospace, monospace; }
-.card .bb { width: 4.5em; font-family: ui-monospace, monospace; }
+.card .tc { width: 8.5em; }
+.card .bb { width: 4.5em; }
 .card i { opacity: .75; flex: 1; }
 .del { background: #0003; border-color: #fff3; color: #fff; }
 .grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px 8px; padding: 12px; border-top: 1px solid #222; }
@@ -274,7 +274,7 @@ aside { display: flex; flex-direction: column; background: #121212; border-right
 .pgm .lyric { margin-top: 16px; font-style: italic; opacity: .9; }
 .tag { position: absolute; top: 10px; left: 12px; font-size: 11px; font-weight: 700; letter-spacing: .1em; background: var(--red); padding: 2px 6px; border-radius: 3px; }
 .tcbox { position: absolute; left: 12px; top: 12px; z-index: 1; background: #000b; border: 1px solid #ffffff30; font-variant-numeric: tabular-nums; }
-.tcl { font: 20px ui-monospace, monospace; padding: 2px 10px; text-align: center; color: #fff; border-bottom: 1px solid #ffffff30; }
+.tcl { font-size: 20px; font-weight: 500; padding: 2px 10px; text-align: center; color: #fff; border-bottom: 1px solid #ffffff30; }
 .tcr { display: grid; grid-template-columns: 1fr 1fr 1fr; align-items: center; text-align: center; font-size: 18px; height: 30px; }
 .tcr span { color: #ddd; }
 .tcr b { height: 100%; display: grid; place-items: center; color: #fff; text-shadow: 0 1px 2px #0006; }
@@ -293,9 +293,9 @@ aside { display: flex; flex-direction: column; background: #121212; border-right
 .toolbar label { font-size: 13px; }
 .toolbar input[type=range] { width: 90px; padding: 0; }
 .spacer { flex: 1; }
-.bigtc { font: 26px ui-monospace, monospace; display: flex; align-items: center; gap: 6px; }
+.bigtc { font-size: 26px; font-weight: 500; display: flex; align-items: center; gap: 6px; }
 .bigtc small { font-size: 11px; border: 1px solid var(--dim); border-radius: 50%; width: 18px; height: 18px; display: grid; place-items: center; color: var(--dim); }
-.bbr { font-family: ui-monospace, monospace; color: var(--dim); }
+.bbr { color: var(--dim); }
 .overview { grid-column: 1 / -1; position: relative; height: 8px; background: #111; cursor: pointer; }
 .overview div { position: absolute; top: 0; bottom: 0; }
 .overview i { position: absolute; top: -2px; bottom: -2px; width: 2px; background: #fff; }

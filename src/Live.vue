@@ -67,5 +67,5 @@ const bar = c => ({ left: pct(Math.max(0, c.start - clock.now)), width: pct(c.en
 .tile.next b { color: #3ddc84; font-weight: 700; }
 .tile.done { opacity: .35; }
 .now { grid-template-columns: 172px 1fr; }
-.now .tc { text-align: right; padding-right: 12px; font: 20px ui-monospace, monospace; color: #fff; }
+.now .tc { text-align: right; padding-right: 12px; font-size: 20px; font-weight: 500; color: #fff; }
 </style>
