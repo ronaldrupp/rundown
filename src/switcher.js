@@ -4,7 +4,7 @@ import { clock, cues, liveIdx } from './store'
 // Sends the planned cuts to a vision mixer while playing: OBS (WebSocket v5) or vMix (HTTP API).
 let saved = {}
 try { saved = JSON.parse(localStorage.getItem('switcher')) ?? {} } catch {}
-export const sw = reactive({ kind: 'off', obsUrl: 'ws://localhost:4455', vmixUrl: 'http://localhost:8088', preview: false, map: {}, ...saved, password: '', status: 'off' })
+export const sw = reactive({ kind: 'off', obsUrl: 'ws://localhost:4455', vmixUrl: 'http://localhost:8088', preview: true, map: {}, ...saved, password: '', status: 'off' })
 // the OBS password stays in memory only
 watch(() => ({ kind: sw.kind, obsUrl: sw.obsUrl, vmixUrl: sw.vmixUrl, preview: sw.preview, map: sw.map }),
   v => { try { localStorage.setItem('switcher', JSON.stringify(v)) } catch {} }, { deep: true })
@@ -32,8 +32,11 @@ export function connect() {
     } else if (m.op === 2) {
       sw.status = 'connected'
       obs('SetCurrentSceneTransition', { transitionName: 'Cut' }) // planned cuts are hard cuts, not fades
-    } else if (m.op === 5 && m.d.eventType === 'CurrentProgramSceneChanged' && sw.preview && sentNext != null) {
-      // in Studio Mode OBS moves the old program into preview after each cut; put the next shot back
+      sentCam = sentNext = null
+      sendState()
+    } else if (m.op === 5 && m.d.eventType === 'CurrentProgramSceneChanged' && clock.playing && sw.preview && sentNext != null) {
+      // in Studio Mode OBS moves the old program into preview after each cut; put the next shot back.
+      // only while playing, so a paused window doesn't fight the director that is running the show
       preview(sentNext)
     }
     else if (m.op === 7 && !m.d.requestStatus.result) sw.status = `error: ${m.d.requestStatus.comment}`
@@ -50,13 +53,19 @@ const vmix = (fn, input) => fetch(`${sw.vmixUrl}/api/?Function=${fn}&Input=${enc
 export function take(cam) { sw.kind === 'obs' ? obs('SetCurrentProgramScene', { sceneName: target(cam) }) : sw.kind === 'vmix' && vmix('CutDirect', target(cam)) }
 function preview(cam) { sw.kind === 'obs' ? obs('SetCurrentPreviewScene', { sceneName: target(cam) }) : sw.kind === 'vmix' && vmix('PreviewInput', target(cam)) }
 
-// cut whenever the on-air camera changes during playback; resync on the next play after a pause
-watch(() => [liveIdx.value, clock.playing, sw.kind], () => {
-  if (sw.kind === 'off' || !clock.playing) return (sentCam = sentNext = null)
+// program cuts only during playback (resynced on the next play after a pause);
+// the next shot sits in preview all the time, also while paused or scrubbing
+function sendState() {
+  if (sw.kind === 'off') return (sentCam = sentNext = null)
   const live = cues.value[liveIdx.value], next = cues.value[liveIdx.value + 1]
-  if (live && live.cam !== sentCam) take((sentCam = live.cam))
-  if (sw.preview && next && next.cam !== sentNext) preview((sentNext = next.cam))
-})
+  if (!clock.playing) sentCam = null
+  else if (live && live.cam !== sentCam) take((sentCam = live.cam))
+  if (!sw.preview) return (sentNext = null)
+  // OBS only has a preview in Studio Mode
+  if (sentNext == null && sw.kind === 'obs') obs('SetStudioModeEnabled', { studioModeEnabled: true })
+  if (next && next.cam !== sentNext) preview((sentNext = next.cam))
+}
+watch(() => [liveIdx.value, clock.playing, sw.kind, sw.preview], sendState)
 
 // reconnect to the mixer chosen last time (an OBS password has to be entered again)
 if (sw.kind !== 'off') connect()
