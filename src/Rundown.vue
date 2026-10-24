@@ -3,8 +3,8 @@ import Live from './Live.vue'
 import { caller } from './caller'
 import { sw } from './switcher'
 import SwitcherPanel from './SwitcherPanel.vue'
-import { ref, computed, watchEffect } from 'vue'
-import { FPS, show, clock, cues, liveIdx, camOf, stc, parseStc, bb, parseBb, dur, tc, seek, toggle, addCue, removeCue, addCam, addItem, snapBeat, spb, secs, loadAudio, loadYoutube, audio } from './store'
+import { ref, computed, watchEffect, onMounted, onUnmounted } from 'vue'
+import { FPS, show, clock, cues, liveIdx, camOf, stc, parseStc, bb, parseBb, dur, tc, seek, toggle, addCue, removeCue, addCam, addItem, snapBeat, spb, secs, loadAudio, loadYoutube, audio, ink, swatch } from './store'
 
 defineProps({ liveMode: Boolean }) // not `live`: that name is the on-air shot below
 
@@ -27,7 +27,14 @@ function setStart(val, parse) {
   if (t !== null && raw.value) raw.value.start = Math.max(0, t)
 }
 function pick(c) { selId.value = c.id; seek(c.start) }
-// drag a shot block to move its cut (snapped to the beat, kept between its neighbours); a click without movement selects it
+// Delete/Backspace removes the clicked shot; never the on-air fallback, so a stray key can't drop the live shot
+function onDel(e) {
+  if (!['Delete', 'Backspace'].includes(e.key) || e.target.matches('input, select, textarea') || !selId.value) return
+  e.preventDefault(); removeCue(selId.value); selId.value = null
+}
+onMounted(() => addEventListener('keydown', onDel))
+onUnmounted(() => removeEventListener('keydown', onDel))
+// drag a shot block to move its cut (snapped to the playhead or beat, kept between its neighbours); a click without movement selects it
 function dragCut(e, c) {
   const el = e.currentTarget, x0 = e.clientX, i = cues.value.indexOf(c), cue = show.cues.find(q => q.id === c.id)
   const lo = i ? cues.value[i - 1].start + 1 / FPS : 0, hi = (cues.value[i + 1]?.start ?? show.duration) - 1 / FPS
@@ -36,7 +43,9 @@ function dragCut(e, c) {
   el.onpointermove = m => {
     if (!moved && Math.abs(m.clientX - x0) < 4) return
     moved = true
-    cue.start = Math.min(hi, Math.max(lo, snapBeat(c.start + (m.clientX - x0) / show.zoom)))
+    const t = c.start + (m.clientX - x0) / show.zoom
+    // within 8px of the playhead, the cut sticks to it (beats the beat grid)
+    cue.start = Math.min(hi, Math.max(lo, Math.abs(t - clock.now) * show.zoom < 8 ? clock.now : snapBeat(t)))
   }
   el.onpointerup = () => { el.onpointermove = el.onpointerup = null; if (!moved) pick(c) }
 }
@@ -117,7 +126,7 @@ watchEffect(() => {
           <b>{{ cues[selIdx - 1].cam }} {{ cues[selIdx - 1].note || camOf(cues[selIdx - 1].cam).name }}</b>
           <span>{{ rel(cues[selIdx - 1].start - clock.now) }}</span>
         </div>
-        <div v-if="sel" class="card big" :style="{ '--c': camOf(sel.cam).color }">
+        <div v-if="sel" class="card big" :style="{ '--c': camOf(sel.cam).color, color: ink(camOf(sel.cam).color) }">
           <div class="row"><select v-model="raw.cam" aria-label="Camera"><option v-for="c in show.cams" :key="c.id" :value="c.id">{{ c.id }}</option></select>
             <input class="shotname" v-model="raw.note" :placeholder="camOf(sel.cam).name" aria-label="Shot description" /></div>
           <div class="row">◧ Cut</div>
@@ -135,7 +144,7 @@ watchEffect(() => {
       <div class="grid">
         <button v-for="cam in show.cams" :key="cam.id" class="cam" @click="cut(cam)" @dblclick="renameCam(cam)"
           :class="{ onair: live?.cam === cam.id, preview: next?.cam === cam.id }" :title="`Cut to ${cam.name} at playhead (double-click to rename)`">
-          <b :style="{ background: cam.color }">{{ cam.id }}</b><small>{{ cam.name }}</small>
+          <b :style="swatch(cam.color)">{{ cam.id }}</b><small>{{ cam.name }}</small>
         </button>
         <button class="cam add" @click="addCam"><b>+</b><small>ADD</small></button>
       </div>
@@ -145,7 +154,7 @@ watchEffect(() => {
       <div ref="screen" class="screen" v-show="clock.hasVideo"></div>
       <div class="tcbox" v-if="live">
         <div class="tcl">{{ stc(clock.now) }}</div>
-        <div class="tcr"><span>{{ liveIdx + 1 }}</span><b :style="{ background: camOf(live.cam).color }">{{ live.cam }}</b><span>{{ secs(live.end - clock.now) }}</span></div>
+        <div class="tcr"><span>{{ liveIdx + 1 }}</span><b :style="swatch(camOf(live.cam).color)">{{ live.cam }}</b><span>{{ secs(live.end - clock.now) }}</span></div>
       </div>
       <div class="pgm">
         <div class="num">{{ live?.cam ?? '–' }}</div>
@@ -205,7 +214,7 @@ watchEffect(() => {
         <div class="lane" @click.self="seek(timeAt($event))">
           <template v-for="(c, i) in cues" :key="c.id">
             <div v-if="visible(c.start, c.end)" class="shot" :class="{ sel: c === sel }" @pointerdown="dragCut($event, c)"
-              :style="{ left: x(c.start), width: w(c.end - c.start), background: camOf(c.cam).color }">
+              :style="{ left: x(c.start), width: w(c.end - c.start), background: camOf(c.cam).color, color: ink(camOf(c.cam).color) }">
               <b>{{ c.cam }}&nbsp; {{ c.note || camOf(c.cam).name }}</b>
               <span>◧</span>
               <span>{{ stc(c.start).slice(3) }} ({{ dur(c.end - c.start) }})</span>
@@ -232,96 +241,98 @@ watchEffect(() => {
 </template>
 
 <style scoped>
-.gutter { cursor: col-resize; background: #1a1a1a; border-left: 1px solid #2a2a2a; border-right: 1px solid #2a2a2a; touch-action: none; }
-.gutter:hover, .gutter:focus-visible { background: #3d8bfd; outline: none; }
-.editor { position: relative; height: 100%; display: grid; grid-template-columns: minmax(300px, 560px) 1fr; grid-template-rows: minmax(0, 1fr) auto auto auto; background: #000; }
-aside { display: flex; flex-direction: column; background: #121212; border-right: 1px solid #222; overflow: auto; min-height: 0; }
-.tabs { padding: 6px 12px; color: var(--dim); font-size: 13px; text-align: center; border-bottom: 1px solid #222; }
-.info { padding: 8px 12px; display: flex; flex-direction: column; gap: 6px; }
-.card { border-radius: 4px; padding: 6px 12px; color: #fff; border-left: 3px solid color-mix(in srgb, var(--c) 60%, #fff); background: color-mix(in srgb, var(--c) 55%, #000); cursor: pointer; display: flex; flex-direction: column; }
+.gutter { cursor: col-resize; background: var(--bg2); border-left: .5px solid var(--line); border-right: .5px solid var(--line); touch-action: none; }
+.gutter:hover, .gutter:focus-visible { background: var(--blue); outline: none; }
+.editor { position: relative; height: 100%; display: grid; grid-template-columns: minmax(300px, 560px) 1fr; grid-template-rows: minmax(0, 1fr) auto auto auto; background: var(--bg); }
+aside { display: flex; flex-direction: column; background: var(--bg2); overflow: auto; min-height: 0; }
+.tabs { padding: 6px 12px; color: var(--dim); font-size: 13px; text-align: center; border-bottom: .5px solid var(--line); }
+.info { padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+.card { border-radius: var(--r); padding: 8px 12px; color: #fff; box-shadow: var(--rim); background: color-mix(in srgb, var(--c) 45%, var(--bg2)); cursor: pointer; display: flex; flex-direction: column; }
 .card.small { font-size: 13px; opacity: .85; }
 .card.small span { opacity: .7; }
-.card.big { background: var(--c); padding: 10px 12px; gap: 6px; cursor: default; font-size: 15px; }
+.card.big { background: var(--c); padding: 12px 14px; border-radius: var(--r-lg); gap: 6px; cursor: default; font-size: 15px; }
 .row { display: flex; align-items: center; gap: 8px; }
-.card input, .card select { background: #0003; border: 1px solid #fff3; color: #fff; }
+.card input, .card select { background: #0003; color: inherit; }
 .card .shotname { flex: 1; font-weight: 600; text-transform: uppercase; }
 .card .tc { width: 8.5em; }
 .card .bb { width: 4.5em; }
 .card i { opacity: .75; flex: 1; }
-.del { background: #0003; border-color: #fff3; color: #fff; }
-.grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px 8px; padding: 12px; border-top: 1px solid #222; }
-.cam { display: flex; flex-direction: column; align-items: stretch; gap: 3px; padding: 0; background: none; border: 0; }
+.del { background: #0003; color: inherit; }
+.grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; padding: 12px; border-top: .5px solid var(--line); }
+.cam { display: flex; flex-direction: column; align-items: stretch; gap: 3px; padding: 0; background: none; border: 0; box-shadow: none; }
 .cam:hover { background: none; filter: brightness(1.2); }
-.cam b { border-radius: 6px; padding: 6px 0; font-size: 17px; color: #fff; text-shadow: 0 1px 2px #0006; border: 2px solid transparent; }
-.cam small { font-size: 10px; color: #ccc; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.cam.onair b { border-color: #fff; box-shadow: 0 0 0 2px var(--red); }
-.cam.preview b { border-color: #3ddc84; }
-.cam.add b { background: #222; color: var(--dim); }
+.cam b { border-radius: var(--r-sm); padding: 8px 0; box-shadow: var(--rim); font-size: 17px; color: #fff; text-shadow: 0 1px 2px #0006; border: 2px solid transparent; }
+.cam small { font-size: 11px; color: var(--dim); text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cam.onair b { border-color: #fff; box-shadow: 0 0 0 2px var(--red), 0 0 16px color-mix(in srgb, var(--red) 60%, transparent); }
+.cam.preview b { border-color: var(--green); }
+.cam.add b { background: var(--fill); color: var(--dim); }
 .monitor { position: relative; display: grid; place-items: center; background: radial-gradient(ellipse at center, color-mix(in srgb, var(--c) 35%, #000), #000 75%); overflow: hidden; min-height: 0; }
 .pgm { text-align: center; color: #fff; }
 .screen { position: absolute; inset: 0; }
 .screen :deep(video) { width: 100%; height: 100%; object-fit: contain; display: block; }
 /* with video only the lyric subtitle remains; camera info lives in the TC box and NOW/NEXT box */
-.video .pgm { position: absolute; left: 12px; right: 12px; bottom: 84px; }
+.video .pgm { position: absolute; left: 12px; right: 12px; bottom: 52px; }
 .video .pgm > :not(.lyric) { display: none; }
 .video .pgm .lyric { margin: 0; text-shadow: 0 1px 4px #000; }
-.toolbar .caller { font-size: 13px; border-radius: 4px; color: var(--dim); }
-.toolbar .caller.on { background: #2a2a2a; color: #fff; }
-.toolbar .yt { font-size: 13px; background: #b0121e; color: #fff; border-radius: 4px; }
+.toolbar .caller { font-size: 13px; color: var(--dim); }
+.toolbar .caller.on { background: var(--fill-hi); color: #fff; }
+.toolbar .yt { font-size: 13px; background: var(--red); color: #fff; }
 .pgm .num { font-size: clamp(60px, 12vw, 160px); font-weight: 800; line-height: 1; color: var(--c); text-shadow: 0 0 40px color-mix(in srgb, var(--c) 60%, transparent); }
 .pgm .name { font-size: 28px; font-weight: 700; letter-spacing: .05em; }
 .pgm .desc { opacity: .8; text-transform: uppercase; }
 .pgm .lyric { margin-top: 16px; font-style: italic; opacity: .9; }
-.tag { position: absolute; top: 10px; left: 12px; font-size: 11px; font-weight: 700; letter-spacing: .1em; background: var(--red); padding: 2px 6px; border-radius: 3px; }
-.tcbox { position: absolute; left: 12px; top: 12px; z-index: 1; background: #000b; border: 1px solid #ffffff30; font-variant-numeric: tabular-nums; }
-.tcl { font-size: 20px; font-weight: 500; padding: 2px 10px; text-align: center; color: #fff; border-bottom: 1px solid #ffffff30; }
+.tag { position: absolute; top: 10px; left: 12px; font-size: 11px; font-weight: 700; letter-spacing: .1em; background: var(--red); padding: 2px 8px; border-radius: 999px; }
+.tcbox { position: absolute; left: 12px; top: 12px; z-index: 1; background: var(--glass); backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur); box-shadow: var(--float); border-radius: var(--r); overflow: hidden; font-variant-numeric: tabular-nums; }
+.tcl { font-size: 20px; font-weight: 500; padding: 2px 10px; text-align: center; color: #fff; border-bottom: .5px solid var(--line); }
 .tcr { display: grid; grid-template-columns: 1fr 1fr 1fr; align-items: center; text-align: center; font-size: 18px; height: 30px; }
-.tcr span { color: #ddd; }
+.tcr span { color: var(--dim); }
 .tcr b { height: 100%; display: grid; place-items: center; color: #fff; text-shadow: 0 1px 2px #0006; }
-.pvw { position: absolute; left: 12px; right: 12px; bottom: 12px; display: flex; padding-bottom: 4px; border-radius: 6px; overflow: hidden; background: #000c; }
+.pvw { position: absolute; left: 12px; right: 12px; bottom: 12px; display: flex; padding-bottom: 3px; border-radius: var(--r); overflow: hidden; background: var(--glass); backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur); box-shadow: var(--float); }
 .prog { position: absolute; left: 0; bottom: 0; height: 4px; background: #fff; }
 .prog.late { background: var(--red); }
-.sec { flex: 1; min-width: 0; display: flex; flex-direction: column; padding: 5px 10px 6px; font-size: 14px; border-left: 4px solid var(--c); background: color-mix(in srgb, var(--c) 30%, #000c); }
-.sec.now { border-right: 1px solid #ffffff22; opacity: .85; }
-.sec .tag { position: static; align-self: flex-start; margin-bottom: 3px; background: #3ddc84; color: #000; }
+.sec { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; padding: 5px 10px; font-size: 11px; border-left: 4px solid var(--c); background: color-mix(in srgb, var(--c) 25%, transparent); }
+.sec.now { border-right: .5px solid var(--line); opacity: .85; }
+.sec .tag { position: static; flex: none; background: var(--green); color: #000; }
 .sec.now .tag { background: var(--red); color: #fff; }
 .sec b, .sec small { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.sec small { opacity: .7; text-transform: uppercase; font-size: 11px; }
-.sec .tag { font-size: 10px; }
-.toolbar { grid-column: 1 / -1; display: flex; align-items: center; gap: 8px; padding: 6px 12px; background: #1a1a1a; border-top: 1px solid #2a2a2a; flex-wrap: wrap; }
-.toolbar button { background: none; border: 0; font-size: 18px; padding: 2px 8px; }
+.sec b { flex: none; max-width: 60%; }
+.sec small { min-width: 0; opacity: .7; text-transform: uppercase; font-size: 10px; }
+.sec .tag { font-size: 9px; padding: 1px 6px; }
+.toolbar { grid-column: 1 / -1; display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: var(--glass); backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur); box-shadow: var(--rim); border-top: .5px solid var(--line); flex-wrap: wrap; }
+.toolbar button { background: none; box-shadow: none; font-size: 18px; padding: 4px 10px; }
+.toolbar button:hover { background: var(--fill); }
 .toolbar label { font-size: 13px; }
 .toolbar input[type=range] { width: 90px; padding: 0; }
 .spacer { flex: 1; }
-.bigtc { font-size: 26px; font-weight: 500; display: flex; align-items: center; gap: 6px; }
+.bigtc { font-size: 26px; font-weight: 600; display: flex; align-items: center; gap: 6px; }
 .bigtc small { font-size: 11px; border: 1px solid var(--dim); border-radius: 50%; width: 18px; height: 18px; display: grid; place-items: center; color: var(--dim); }
 .bbr { color: var(--dim); }
-.overview { grid-column: 1 / -1; position: relative; height: 8px; background: #111; cursor: pointer; }
+.overview { grid-column: 1 / -1; position: relative; height: 8px; background: var(--bg2); cursor: pointer; }
 .overview div { position: absolute; top: 0; bottom: 0; }
 .overview i { position: absolute; top: -2px; bottom: -2px; width: 2px; background: #fff; }
-.timeline { grid-column: 1 / -1; position: relative; background: #0a0a0a; overflow: hidden; user-select: none; }
-.track { display: flex; height: 42px; border-bottom: 1px solid #1c1c1c; }
-.head { width: 190px; flex: none; display: flex; align-items: center; gap: 8px; padding: 0 10px 0 0; background: #161616; border-right: 1px solid #222; font-size: 13px; z-index: 2; }
+.timeline { grid-column: 1 / -1; position: relative; background: var(--bg); overflow: hidden; user-select: none; }
+.track { display: flex; height: 42px; border-bottom: .5px solid var(--line); }
+.head { width: 190px; flex: none; display: flex; align-items: center; gap: 8px; padding: 0 10px 0 0; background: var(--bg2); border-right: .5px solid var(--line); font-size: 13px; z-index: 2; }
 .head small { margin-left: auto; color: var(--dim); }
-.head button { margin-left: auto; background: none; border: 0; color: var(--dim); padding: 0 4px; }
-.ico { width: 34px; align-self: stretch; display: grid; place-items: center; background: #2a2a5a; color: #fff; }
-.ico.red { background: #b0121e; }
+.head button { margin-left: auto; background: none; box-shadow: none; color: var(--dim); padding: 0 4px; }
+.ico { width: 26px; height: 26px; margin-left: 6px; border-radius: 7px; display: grid; place-items: center; background: var(--blue); color: #fff; font-size: 13px; }
+.ico.red { background: var(--red); }
 .lane { position: relative; flex: 1; overflow: hidden; }
 .ruler { height: 30px; }
-.ruler .head { background: #0a0a0a; }
+.ruler .head { background: var(--bg); }
 .ruler .lane { cursor: pointer; }
-.bar { position: absolute; top: 0; bottom: 0; border-left: 1px solid #444; padding-left: 4px; font-size: 10px; color: var(--dim); display: flex; flex-direction: column; white-space: nowrap; }
-.bar b { color: #ccc; }
+.bar { position: absolute; top: 0; bottom: 0; border-left: .5px solid var(--faint); padding-left: 4px; font-size: 10px; color: var(--dim); display: flex; flex-direction: column; white-space: nowrap; }
+.bar b { color: var(--text); font-weight: 500; }
 .switcher { height: 96px; }
-.switcher .head { background: #161616; }
-.shot { position: absolute; top: 0; bottom: 0; padding: 6px 8px; color: #fff; display: flex; flex-direction: column; gap: 2px; overflow: hidden; white-space: nowrap; border-right: 2px solid #000; cursor: grab; font-size: 12px; touch-action: none; }
+.switcher .head { background: var(--bg2); }
+.shot { position: absolute; top: 0; bottom: 0; padding: 6px 8px; color: #fff; display: flex; flex-direction: column; gap: 2px; overflow: hidden; white-space: nowrap; border-right: 2px solid var(--bg); border-radius: var(--r-sm); cursor: grab; font-size: 12px; touch-action: none; }
 .shot:active { cursor: grabbing; }
 .shot > b { font-size: 15px; text-transform: uppercase; text-overflow: ellipsis; overflow: hidden; }
 .shot i { opacity: .7; }
 .shot.sel { box-shadow: inset 0 0 0 2px #fff; }
 .item { position: absolute; top: 50%; transform: translateY(-50%); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; font-size: 13px; }
-.note .item { background: #2a2a2a; border: 1px solid #3a3a3a; border-radius: 4px; padding: 3px 8px; }
-.lyrics .item { font-size: 15px; padding-left: 4px; border-left: 2px solid #ffffff40; }
+.note .item { background: var(--fill); box-shadow: var(--rim); border-radius: 999px; padding: 3px 10px; }
+.lyrics .item { font-size: 15px; padding-left: 4px; border-left: 2px solid var(--faint); }
 .audio canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
 .playhead { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--red); left: calc(190px + (100% - 190px) * 0.3); pointer-events: none; z-index: 3; }
 </style>

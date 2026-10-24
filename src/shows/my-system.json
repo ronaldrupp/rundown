@@ -1,0 +1,610 @@
+{
+ "production": "Eurovision Song Contest 2026",
+ "episode": "GRAND FINAL \u2013 SWEDEN",
+ "songNo": 1,
+ "title": "My System",
+ "artist": "FELICIA",
+ "bpm": 145,
+ "beatsPerBar": 4,
+ "snap": true,
+ "duration": 199.52,
+ "tcOffset": 75600,
+ "zoom": 80,
+ "media": {
+  "file": "/media/my-system.mp4",
+  "title": "My System (ESC 2026)",
+  "url": "https://www.youtube.com/watch?v=6pmj0jbFKGU"
+ },
+ "cams": [
+  {
+   "id": 1,
+   "name": "CU CENTER TELE",
+   "color": "#ff453a"
+  },
+  {
+   "id": 2,
+   "name": "STEADICAM",
+   "color": "#ffd60a"
+  },
+  {
+   "id": 3,
+   "name": "CRANE FOH",
+   "color": "#5e5ce6"
+  },
+  {
+   "id": 4,
+   "name": "HIGH WIDE HOUSE",
+   "color": "#0a84ff"
+  },
+  {
+   "id": 5,
+   "name": "HANDHELD SL",
+   "color": "#63e6e2"
+  },
+  {
+   "id": 6,
+   "name": "TOP SHOT",
+   "color": "#ff375f"
+  },
+  {
+   "id": 7,
+   "name": "LOW FRONT PIT",
+   "color": "#30d158"
+  },
+  {
+   "id": 8,
+   "name": "HANDHELD SR",
+   "color": "#bf5af2"
+  }
+ ],
+ "cues": [
+  {
+   "id": 1,
+   "start": 0.0,
+   "cam": 4,
+   "note": "POSTCARD, ARENA WIDE"
+  },
+  {
+   "id": 2,
+   "start": 6.84,
+   "cam": 2,
+   "note": "DARK OPEN, FADE UP IN RED SMOKE, SLOW PUSH"
+  },
+  {
+   "id": 3,
+   "start": 23.0,
+   "cam": 5,
+   "note": "PROFILE CU, BACKLIT"
+  },
+  {
+   "id": 4,
+   "start": 25.5,
+   "cam": 1,
+   "note": "CU MASK, SMOKE"
+  },
+  {
+   "id": 5,
+   "start": 30.0,
+   "cam": 8,
+   "note": "CU SIDE, RED LED"
+  },
+  {
+   "id": 6,
+   "start": 36.0,
+   "cam": 3,
+   "note": "WIDE STAGE, RED LED FLOOR"
+  },
+  {
+   "id": 7,
+   "start": 39.64,
+   "cam": 1,
+   "note": "CU MASK"
+  },
+  {
+   "id": 8,
+   "start": 43.0,
+   "cam": 2,
+   "note": "MS HAND UP"
+  },
+  {
+   "id": 9,
+   "start": 45.0,
+   "cam": 7,
+   "note": "WIDE LOW, LED FLOOR"
+  },
+  {
+   "id": 10,
+   "start": 46.24,
+   "cam": 8,
+   "note": "MS"
+  },
+  {
+   "id": 11,
+   "start": 47.5,
+   "cam": 2,
+   "note": "MS, WAVE LED"
+  },
+  {
+   "id": 12,
+   "start": 51.0,
+   "cam": 1,
+   "note": "MCU MIC"
+  },
+  {
+   "id": 13,
+   "start": 52.0,
+   "cam": 5,
+   "note": "CU"
+  },
+  {
+   "id": 14,
+   "start": 55.0,
+   "cam": 3,
+   "note": "WIDE LASERS, DANCERS"
+  },
+  {
+   "id": 15,
+   "start": 59.0,
+   "cam": 2,
+   "note": "MS WITH DANCERS"
+  },
+  {
+   "id": 16,
+   "start": 60.0,
+   "cam": 1,
+   "note": "MCU"
+  },
+  {
+   "id": 17,
+   "start": 61.0,
+   "cam": 4,
+   "note": "WIDE LASERS"
+  },
+  {
+   "id": 18,
+   "start": 64.0,
+   "cam": 5,
+   "note": "CU BLUE"
+  },
+  {
+   "id": 19,
+   "start": 65.0,
+   "cam": 8,
+   "note": "MCU"
+  },
+  {
+   "id": 20,
+   "start": 66.0,
+   "cam": 7,
+   "note": "WIDE LASERS LOW"
+  },
+  {
+   "id": 21,
+   "start": 67.8,
+   "cam": 5,
+   "note": "GROUP, WHITE HIT"
+  },
+  {
+   "id": 22,
+   "start": 69.2,
+   "cam": 4,
+   "note": "ARENA GRID"
+  },
+  {
+   "id": 23,
+   "start": 70.44,
+   "cam": 3,
+   "note": "WIDE DARK"
+  },
+  {
+   "id": 24,
+   "start": 71.56,
+   "cam": 4,
+   "note": "WHITE WIDE"
+  },
+  {
+   "id": 25,
+   "start": 72.48,
+   "cam": 7,
+   "note": "WIDE LOW"
+  },
+  {
+   "id": 26,
+   "start": 73.76,
+   "cam": 3,
+   "note": "WIDE"
+  },
+  {
+   "id": 27,
+   "start": 74.72,
+   "cam": 8,
+   "note": "GROUP"
+  },
+  {
+   "id": 28,
+   "start": 75.84,
+   "cam": 2,
+   "note": "MS LASERS"
+  },
+  {
+   "id": 29,
+   "start": 77.04,
+   "cam": 7,
+   "note": "WIDE GROUP"
+  },
+  {
+   "id": 30,
+   "start": 78.0,
+   "cam": 4,
+   "note": "WHITE WIDE"
+  },
+  {
+   "id": 31,
+   "start": 79.12,
+   "cam": 3,
+   "note": "ARENA"
+  },
+  {
+   "id": 32,
+   "start": 79.8,
+   "cam": 1,
+   "note": "CU"
+  },
+  {
+   "id": 33,
+   "start": 80.6,
+   "cam": 2,
+   "note": "PUSH THRU DANCERS, LASER CAGE"
+  },
+  {
+   "id": 34,
+   "start": 88.0,
+   "cam": 5,
+   "note": "GROUP"
+  },
+  {
+   "id": 35,
+   "start": 90.0,
+   "cam": 1,
+   "note": "MCU LASERS"
+  },
+  {
+   "id": 36,
+   "start": 94.0,
+   "cam": 7,
+   "note": "WIDE, BLUE SINGLE BEAM"
+  },
+  {
+   "id": 37,
+   "start": 101.0,
+   "cam": 2,
+   "note": "MS"
+  },
+  {
+   "id": 38,
+   "start": 104.6,
+   "cam": 8,
+   "note": "MS RED"
+  },
+  {
+   "id": 39,
+   "start": 105.44,
+   "cam": 2,
+   "note": "MS RED"
+  },
+  {
+   "id": 40,
+   "start": 107.36,
+   "cam": 1,
+   "note": "CU, SYSTEM GRAPHIC"
+  },
+  {
+   "id": 41,
+   "start": 109.16,
+   "cam": 4,
+   "note": "ARENA LASERS"
+  },
+  {
+   "id": 42,
+   "start": 114.48,
+   "cam": 1,
+   "note": "MCU LASERS"
+  },
+  {
+   "id": 43,
+   "start": 115.24,
+   "cam": 3,
+   "note": "WIDE LASERS"
+  },
+  {
+   "id": 44,
+   "start": 116.56,
+   "cam": 7,
+   "note": "WIDE LASERS, DANCERS LINE"
+  },
+  {
+   "id": 45,
+   "start": 122.48,
+   "cam": 5,
+   "note": "GROUP"
+  },
+  {
+   "id": 46,
+   "start": 123.28,
+   "cam": 8,
+   "note": "GROUP"
+  },
+  {
+   "id": 47,
+   "start": 123.92,
+   "cam": 2,
+   "note": "GROUP"
+  },
+  {
+   "id": 48,
+   "start": 124.56,
+   "cam": 5,
+   "note": "GROUP"
+  },
+  {
+   "id": 49,
+   "start": 125.72,
+   "cam": 3,
+   "note": "WIDE"
+  },
+  {
+   "id": 50,
+   "start": 126.48,
+   "cam": 7,
+   "note": "WIDE"
+  },
+  {
+   "id": 51,
+   "start": 127.48,
+   "cam": 2,
+   "note": "MS WITH DANCER"
+  },
+  {
+   "id": 52,
+   "start": 128.96,
+   "cam": 5,
+   "note": "GROUP"
+  },
+  {
+   "id": 53,
+   "start": 130.68,
+   "cam": 8,
+   "note": "GROUP CU"
+  },
+  {
+   "id": 54,
+   "start": 131.64,
+   "cam": 4,
+   "note": "ARENA WARM"
+  },
+  {
+   "id": 55,
+   "start": 132.28,
+   "cam": 7,
+   "note": "WIDE LASERS"
+  },
+  {
+   "id": 56,
+   "start": 133.16,
+   "cam": 4,
+   "note": "ARENA"
+  },
+  {
+   "id": 57,
+   "start": 134.6,
+   "cam": 3,
+   "note": "HIGH WIDE"
+  },
+  {
+   "id": 58,
+   "start": 136.0,
+   "cam": 6,
+   "note": "KALEIDOSCOPE"
+  },
+  {
+   "id": 59,
+   "start": 142.32,
+   "cam": 1,
+   "note": "CU RED"
+  },
+  {
+   "id": 60,
+   "start": 148.84,
+   "cam": 7,
+   "note": "WIDE LASERS"
+  },
+  {
+   "id": 61,
+   "start": 150.08,
+   "cam": 3,
+   "note": "WIDE"
+  },
+  {
+   "id": 62,
+   "start": 152.16,
+   "cam": 2,
+   "note": "MS LASERS, SLOW PUSH"
+  },
+  {
+   "id": 63,
+   "start": 160.0,
+   "cam": 1,
+   "note": "MCU"
+  },
+  {
+   "id": 64,
+   "start": 162.08,
+   "cam": 5,
+   "note": "SILHOUETTE"
+  },
+  {
+   "id": 65,
+   "start": 163.76,
+   "cam": 7,
+   "note": "SILHOUETTES, RED CLOUDS"
+  },
+  {
+   "id": 66,
+   "start": 165.4,
+   "cam": 3,
+   "note": "GROUP WIDE"
+  },
+  {
+   "id": 67,
+   "start": 167.08,
+   "cam": 4,
+   "note": "ARENA"
+  },
+  {
+   "id": 68,
+   "start": 169.48,
+   "cam": 3,
+   "note": "WIDE WHITE"
+  },
+  {
+   "id": 69,
+   "start": 171.16,
+   "cam": 7,
+   "note": "LASERS"
+  },
+  {
+   "id": 70,
+   "start": 172.24,
+   "cam": 1,
+   "note": "CU GLASSES"
+  },
+  {
+   "id": 71,
+   "start": 175.36,
+   "cam": 4,
+   "note": "WIDE"
+  },
+  {
+   "id": 72,
+   "start": 176.16,
+   "cam": 7,
+   "note": "WIDE LASERS"
+  },
+  {
+   "id": 73,
+   "start": 177.08,
+   "cam": 2,
+   "note": "MS"
+  },
+  {
+   "id": 74,
+   "start": 178.64,
+   "cam": 8,
+   "note": "MS WITH DANCERS"
+  },
+  {
+   "id": 75,
+   "start": 180.68,
+   "cam": 4,
+   "note": "ARENA HIGH"
+  },
+  {
+   "id": 76,
+   "start": 183.64,
+   "cam": 5,
+   "note": "GROUP, WHITE HIT"
+  },
+  {
+   "id": 77,
+   "start": 184.64,
+   "cam": 8,
+   "note": "GROUP RED"
+  },
+  {
+   "id": 78,
+   "start": 185.24,
+   "cam": 6,
+   "note": "TOP WIDE"
+  },
+  {
+   "id": 79,
+   "start": 186.08,
+   "cam": 4,
+   "note": "ARENA"
+  },
+  {
+   "id": 80,
+   "start": 187.36,
+   "cam": 7,
+   "note": "LASERS"
+  },
+  {
+   "id": 81,
+   "start": 188.56,
+   "cam": 3,
+   "note": "WIDE DANCERS"
+  },
+  {
+   "id": 82,
+   "start": 191.72,
+   "cam": 1,
+   "note": "MS END POSE"
+  },
+  {
+   "id": 83,
+   "start": 194.72,
+   "cam": 5,
+   "note": "AUDIENCE, OUT"
+  }
+ ],
+ "tracks": [
+  {
+   "id": 1,
+   "name": "Lyrics 1",
+   "kind": "lyrics",
+   "items": []
+  },
+  {
+   "id": 2,
+   "name": "Staging",
+   "kind": "note",
+   "items": [
+    {
+     "id": 1,
+     "start": 6.84,
+     "text": "Dark open, red smoke"
+    },
+    {
+     "id": 2,
+     "start": 55.0,
+     "text": "Laser cage, dancers"
+    },
+    {
+     "id": 3,
+     "start": 67.8,
+     "text": "Chorus: fast cuts"
+    },
+    {
+     "id": 4,
+     "start": 136.0,
+     "text": "Kaleidoscope top shot"
+    },
+    {
+     "id": 5,
+     "start": 152.16,
+     "text": "Bridge, white beams"
+    },
+    {
+     "id": 6,
+     "start": 172.24,
+     "text": "Glasses, final chorus"
+    },
+    {
+     "id": 7,
+     "start": 191.72,
+     "text": "End pose"
+    }
+   ]
+  }
+ ]
+}

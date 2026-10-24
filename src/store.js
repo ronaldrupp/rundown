@@ -1,15 +1,18 @@
 import { reactive, computed, watch } from 'vue'
 
 export const FPS = 25
-const COLORS = ['#ff4a12', '#3d8bfd', '#d61fd6', '#1fb74a', '#6a3df5', '#8b3fc9', '#4a5a8a', '#8a2a6a', '#e0461b', '#f2e600',
-  '#19e3c4', '#9b3bf0', '#ff7a1a', '#22d65a', '#7a3a2a', '#f5c518', '#6b5a2a', '#3b3f9a', '#c03df0', '#6b3a1a']
+// Apple dark-mode system colors: red, blue, pink, green, indigo, purple, orange, yellow, mint, cyan, brown, teal, gray
+const COLORS = ['#ff453a', '#0a84ff', '#ff375f', '#30d158', '#5e5ce6', '#bf5af2', '#ff9f0a', '#ffd60a', '#63e6e2', '#64d2ff', '#ac8e68', '#40cbe0', '#8e8e93']
+// saves from before the Apple palette: old camera hex -> system color
+const OLD = { '#ff4a12': '#ff453a', '#3d8bfd': '#0a84ff', '#d61fd6': '#ff375f', '#1fb74a': '#30d158', '#6a3df5': '#5e5ce6', '#8b3fc9': '#bf5af2',
+  '#ff7a1a': '#ff9f0a', '#f2e600': '#ffd60a', '#19e3c4': '#63e6e2', '#ec4899': '#64d2ff', '#7a3a2a': '#ac8e68' }
 const CAM_NAMES = ['CU LEFT', 'CU CENTER LOW', 'CU RIGHT', 'CU CENTER HIGH', 'CU 45° LEFT', 'CU 45° RIGHT', 'TOWER CAM', 'DOLLY', 'DOLLY A', 'DOLLY B',
   'STEADI A', 'STEADI B', 'CRANE LEFT', 'CRANE RIGHT', 'LINE CAM', 'HANDHELD']
 
 const demo = {
   production: 'Live Show 2026', episode: 'FINALE', songNo: 10, title: 'Demo Song', artist: 'Demo Artist',
   media: null, bpm: 120, beatsPerBar: 4, snap: true, duration: 180, tcOffset: 7 * 3600 + 40 * 60, zoom: 80,
-  cams: CAM_NAMES.map((name, i) => ({ id: i + 1, name, color: COLORS[i] })),
+  cams: CAM_NAMES.map((name, i) => ({ id: i + 1, name, color: COLORS[i % COLORS.length] })),
   cues: [[0, 7, 'TOWER WIDE OPENING'], [8, 6, 'FS > ZO GENTLY'], [16, 4, 'CENTER MS > PAN LEFT'], [20, 1, 'ECU ZOOM OUT + FLY UP ON TEMPO'],
     [28, 3, 'ECU'], [30, 6, 'STG ZI'], [32, 8, 'DOLLY RIGHT'], [40, 10, 'WIDE CHORUS']]
     .map(([start, cam, note], i) => ({ id: i + 1, start, cam, note })),
@@ -21,6 +24,7 @@ const demo = {
 
 let saved = null
 try { saved = JSON.parse(localStorage.getItem('rundown')) } catch {}
+saved?.cams?.forEach(c => (c.color = OLD[c.color] ?? c.color))
 export const show = reactive({ ...structuredClone(demo), ...saved }) // spread keeps older saves loadable
 watch(show, v => { try { localStorage.setItem('rundown', JSON.stringify(v)) } catch {} }, { deep: true })
 
@@ -118,7 +122,11 @@ export const cues = computed(() => {
   const s = [...show.cues].sort((a, b) => a.start - b.start)
   return s.map((c, i) => ({ ...c, end: s[i + 1]?.start ?? show.duration }))
 })
-export const camOf = id => show.cams.find(c => c.id === id) ?? { name: '?', color: '#666' }
+// yellow, mint, cyan, teal are too light for white numbers
+const LIGHT = new Set(['#ffd60a', '#63e6e2', '#64d2ff', '#40cbe0'])
+export const ink = color => (LIGHT.has(color) ? '#000' : '#fff')
+export const swatch = color => ({ background: color, color: ink(color) })
+export const camOf = id => show.cams.find(c => c.id === id) ?? { name: '?', color: '#8e8e93' }
 export const liveIdx = computed(() => cues.value.findLastIndex(c => c.start <= clock.now))
 
 export function addCue(start, cam) {

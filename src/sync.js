@@ -39,9 +39,10 @@ export function follow() {
     }
     link.last = t
     leaderPlaying = clock.playing = c.playing
-    // glide toward the director's time while playing instead of snapping back every 100ms; jump on seeks
+    // glide toward the director's time while playing; jump on seeks. Wi-Fi delivers late, never early,
+    // so catch up fast but back off slowly, or every delayed burst yanks the clock back
     const drift = c.now - clock.now
-    clock.now = c.playing && Math.abs(drift) < 0.25 ? clock.now + drift * 0.3 : c.now
+    clock.now = c.playing && Math.abs(drift) < 0.5 ? clock.now + drift * (drift > 0 ? 0.5 : 0.05) : c.now
   })
   hot.send('rundown:hello')
 }

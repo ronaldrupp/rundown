@@ -19,57 +19,57 @@
   {
    "id": 1,
    "name": "CU CENTER TELE",
-   "color": "#ff4a12"
+   "color": "#ff453a"
   },
   {
    "id": 2,
    "name": "MS CENTER TELE",
-   "color": "#3d8bfd"
+   "color": "#0a84ff"
   },
   {
    "id": 3,
    "name": "WIDE FOH",
-   "color": "#1fb74a"
+   "color": "#30d158"
   },
   {
    "id": 4,
    "name": "CRANE",
-   "color": "#6a3df5"
+   "color": "#5e5ce6"
   },
   {
    "id": 5,
    "name": "LOW SL PIT",
-   "color": "#d61fd6"
+   "color": "#ff375f"
   },
   {
    "id": 6,
    "name": "TOP SHOT",
-   "color": "#19e3c4"
+   "color": "#63e6e2"
   },
   {
    "id": 7,
    "name": "HOUSE LEFT HH",
-   "color": "#ff7a1a"
+   "color": "#ff9f0a"
   },
   {
    "id": 8,
    "name": "STEADICAM",
-   "color": "#f2e600"
+   "color": "#ffd60a"
   },
   {
    "id": 9,
    "name": "WIDE HIGH FOH",
-   "color": "#8b3fc9"
+   "color": "#bf5af2"
   },
   {
    "id": 10,
    "name": "HANDHELD STAGE",
-   "color": "#7a3a2a"
+   "color": "#ac8e68"
   },
   {
    "id": 11,
    "name": "HOUSE RIGHT HH",
-   "color": "#ec4899"
+   "color": "#64d2ff"
   }
  ],
  "cues": [

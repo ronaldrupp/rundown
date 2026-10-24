@@ -1,5 +1,5 @@
 <script setup>
-import { show } from './store'
+import { show, swatch } from './store'
 import { sw, connect, take } from './switcher'
 defineEmits(['close'])
 </script>
@@ -23,7 +23,7 @@ defineEmits(['close'])
       <div class="map">
         <div class="mh"><span>Cam</span><span>{{ sw.kind === 'obs' ? 'OBS scene' : 'vMix input' }}</span><span></span></div>
         <div v-for="c in show.cams" :key="c.id" class="mr">
-          <b :style="{ background: c.color }">{{ c.id }}</b>
+          <b :style="swatch(c.color)">{{ c.id }}</b>
           <input v-model="sw.map[c.id]" :placeholder="`CAM ${c.id}`" :aria-label="`Target for camera ${c.id} ${c.name}`" />
           <button @click="take(c.id)" title="Cut to this now">Take</button>
         </div>
@@ -34,17 +34,17 @@ defineEmits(['close'])
 </template>
 
 <style scoped>
-.panel { position: absolute; right: 12px; bottom: 56px; z-index: 10; width: 340px; max-height: 70vh; overflow: auto; background: #161616; border: 1px solid #333; border-radius: 8px; padding: 10px 12px; box-shadow: 0 10px 30px #000a; font-size: 13px; }
+.panel { position: absolute; right: 12px; bottom: 56px; z-index: 10; width: 340px; max-height: 70vh; overflow: auto; background: var(--glass-thick); backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur); border-radius: var(--r-lg); padding: 14px 16px; box-shadow: var(--float); font-size: 13px; }
 .row { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 6px 0; color: var(--text); }
 .row input:not([type=checkbox]), .row select { width: 200px; }
-.head button { background: none; border: 0; }
+.head button { background: none; box-shadow: none; }
 .status { color: var(--dim); }
-.status.ok { color: #3ddc84; }
+.status.ok { color: var(--green); }
 .status.bad { color: var(--red); }
-.map { margin-top: 8px; border-top: 1px solid #2a2a2a; padding-top: 6px; }
+.map { margin-top: 8px; border-top: .5px solid var(--line); padding-top: 6px; }
 .mh, .mr { display: grid; grid-template-columns: 36px 1fr 52px; gap: 6px; align-items: center; margin: 4px 0; }
 .mh { color: var(--dim); font-size: 11px; }
-.mr b { text-align: center; padding: 3px 0; color: #fff; border-radius: 3px; }
+.mr b { text-align: center; padding: 3px 0; color: #fff; border-radius: 6px; }
 .mr button { padding: 3px 6px; font-size: 12px; }
 .hint { color: var(--dim); font-size: 11px; margin: 8px 0 0; }
 </style>

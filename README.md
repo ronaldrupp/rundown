@@ -2,11 +2,13 @@
 
 A browser-based camera rundown for music performances in live TV. Plan every camera cut against **timecode** and **musical bars/beats**, then run the show from a **LIVE** view with a scrolling shot waterfall, per-camera countdowns and the program video beside it.
 
-![Director window and a synced camera operator view](docs/overview.png)
+![Director LIVE view and the iPhone camera operator app, camera 2 on air](docs/overview.png)
 
-<sub>Director's LIVE view (left) and a camera operator view on another device (right), synced over the network.</sub>
+<sub>Tate McRae's "Housewife" at 20:01:31:19 with camera 2 on air: the director's LIVE view in the browser (left) and the iPhone app as camera 2's operator view (right), synced over the network.</sub>
 
 Built with Vue 3 and Vite. No separate backend: the Vite dev server also downloads reference videos and relays the clock to camera operator devices.
+
+**Vibe-coded and open source.** The web app and the iOS app were built by describing what they should do to an AI coding assistant ([Claude Code](https://claude.com/claude-code)), reviewing the result in the running app, and iterating. The code is MIT-licensed ([see below](#license)): use it, fork it, learn from it. Expect rough edges, and test it yourself before you take it near a real show.
 
 > Inspired by professional show-calling tools such as [LiveEdit](https://liveedit.app) and [CuePilot](https://www.cuepilot.com). This is an independent hobby project. It is not affiliated with, endorsed by or connected to either product or company. All product names and trademarks belong to their respective owners.
 
@@ -14,23 +16,38 @@ Built with Vue 3 and Vite. No separate backend: the Vite dev server also downloa
 
 All screenshots show the example rundown for Tate McRae's "Housewife" ([see below](#example-reverse-engineered-shot-list)). The performance video is blurred on purpose.
 
-**Editor**: shot info, camera buttons, program monitor and track timeline, with the switcher **Output** panel connected to OBS.
+### iPhone camera operator app
 
-![Editor with the switcher output panel](docs/editor.png)
+Camera 2 just before and during its shot 32. **Standby** (left): camera 2 is next, so the screen edge glows green and the countdown bar runs down to the cut. **On air** (right): the glow turns red and the shot is marked LIVE. The yellow line is the operator's own note on that shot.
+
+<p>
+<img src="docs/ios-standby.png" alt="iPhone camera view on standby: green glow, camera 2 next in 1.7 seconds, with the operator's note on the shot" width="260">
+<img src="docs/ios-onair.png" alt="iPhone camera view on air: red glow, camera 2's shot marked LIVE" width="260">
+</p>
+
+- **Top:** the whole cut flow, scrolling up under the floating header.
+- **Middle:** the countdown to this camera's next cut, or the time left on air. Drag it to resize the two lists; it snaps to the middle of the screen.
+- **Below:** only this camera's shots, with the time to reposition between them. Every bar shares one playhead.
+
+Tap a shot to write notes on it, and tap the camera in the header to switch cameras.
+
+**Landscape**: the cut flow on the left, the countdown and this camera's shots on the right.
+
+<img src="docs/ios-landscape.png" alt="iPhone camera view in landscape, camera 2 on air" width="540">
+
+### Browser
+
+**Editor**: shot info with the previous and next shot, camera buttons, program monitor and track timeline.
+
+![Editor](docs/editor.png)
 
 **LIVE**: the shot waterfall with sliding duration bars, per-camera countdowns, and the program monitor with a NOW/NEXT bar.
 
 ![LIVE view](docs/live.png)
 
-**Camera operator view** (`/#cam=5` on a tablet, CuePilot-style):
+**Camera operator view** (`/#cam=2` on a tablet, CuePilot-style): the same layout as the iPhone app, following the director's window live.
 
-- **Top:** the whole cut flow.
-- **Middle:** this camera's bar, red on air and green on standby, with a big countdown.
-- **Below:** only this camera's shots on the same sliding time axis, with the time to reposition between them (`+40s`).
-
-It follows the director's window live.
-
-<img src="docs/camera.png" alt="Camera operator view on a tablet, camera 5 on air" width="420">
+<img src="docs/camera.png" alt="Camera operator view on a tablet, camera 2 on standby" width="420">
 
 <sub>Video frames (blurred): Tate McRae – 2026 Victoria's Secret Fashion Show Performance, © 2026 RCA Records / Sony Music Entertainment. Shown for illustration only.</sub>
 
@@ -98,21 +115,18 @@ The director's window (the normal view) publishes the rundown and clock about 10
 
 ## iPhone and iPad app
 
-`ios/` holds a native SwiftUI app (iOS 26, Liquid Glass) that follows the director's window over the same WebSocket as the browser camera views. The web director stays the host. The app has two modes, chosen in its settings:
+`ios/` holds a native SwiftUI app (iOS 26, Liquid Glass) that follows the director's window over the same WebSocket as the browser camera views. The web director stays the host. Tap the camera in the header to pick a camera or the director remote:
 
-- **Camera**: the waterfall from the browser camera view, or a card layout with a big countdown. A red glow around the screen edge shows the moment this camera is on air.
+- **Camera**: the waterfall from the browser camera view, or a card layout with a big countdown. The screen edge glows green on standby and red on air. Tap a shot to write notes on it; they stay on the device and show in this camera's list. Turn the phone sideways for a side-by-side layout.
 - **Director remote**: for a director on the move with an iPad. It shows what is on air and next, plus the whole cut flow. Play, pause, jump one bar, or tap a shot to jump there. The director's browser window carries out each command.
 
 Both shot lists scroll on their own, and **Back to live** returns them to the shot on air.
 
-<p>
-<img src="docs/ios-camera.png" alt="iPhone camera view: waterfall with camera 1 on air and a red glow around the screen" width="260">
 <img src="docs/ios-ipad-director.png" alt="iPad director remote: on air and next cards, the cut flow and play controls" width="440">
-</p>
 
-<sub>Left: camera 1 on air on an iPhone 17 Pro. Right: director remote on an iPad Pro 11".</sub>
+<sub>Director remote on an iPad Pro 11".</sub>
 
-Open `ios/CamOp.xcodeproj` in Xcode 26 or later, pick your team under *Signing & Capabilities*, and run it. In the app's settings, enter your Mac's address, for example `192.168.1.10:5173`, with the dev server started via `npm run dev:lan`. iOS asks for local network access the first time. The Xcode project is generated from `ios/project.yml` with [XcodeGen](https://github.com/yonaskolb/XcodeGen) (`cd ios && xcodegen generate`).
+Open `ios/CamOp.xcodeproj` in Xcode 26 or later, pick your team under *Signing & Capabilities*, and run it. In the app's settings (gear icon), enter your Mac's address, for example `192.168.1.10:5173`, with the dev server started via `npm run dev:lan`. iOS asks for local network access the first time. The Xcode project is generated from `ios/project.yml` with [XcodeGen](https://github.com/yonaskolb/XcodeGen) (`cd ios && xcodegen generate`).
 
 Like the browser views, the app trusts anyone on the network: the remote's play, pause and seek commands are not authenticated.
 
@@ -188,3 +202,7 @@ ffmpeg -ss 1.0613 -to 172.24 -i media/full.mp4 -c:v libx264 -c:a aac media/house
 - Sync is last-writer-wins. Run one director window per show.
 - Edits live in browser storage only. There's no export or sync yet.
 - Downloaded videos are copyrighted by their owners and are excluded from the repo (`media/` is git-ignored). Respect YouTube's Terms of Service and only download content you have the rights to use.
+
+## License
+
+[MIT](LICENSE) © 2026 Ronald Rupp. The license covers the code. It doesn't cover the third-party performances shown in the screenshots or referenced by the example rundowns.

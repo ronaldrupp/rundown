@@ -1,6 +1,6 @@
 <script setup>
 import { computed } from 'vue'
-import { show, clock, cues, liveIdx, camOf, stc, secs } from './store'
+import { show, clock, cues, liveIdx, camOf, stc, secs, swatch } from './store'
 
 const WINDOW = 12 // seconds shown across the bar area
 const ROWS = 14
@@ -23,7 +23,7 @@ const bar = c => ({ left: pct(Math.max(0, c.start - clock.now)), width: pct(c.en
     <div class="rows">
     <div v-if="live" class="row onair">
       <span class="no">{{ liveIdx + 1 }}</span>
-      <span class="cam" :style="{ background: camOf(live.cam).color }">{{ live.cam }}</span>
+      <span class="cam" :style="swatch(camOf(live.cam).color)">{{ live.cam }}</span>
       <span class="cnt red">{{ secs(live.end - clock.now) }}</span>
       <span class="txt"><i :style="bar(live)"></i><b>{{ live.note || camOf(live.cam).name }}</b></span>
     </div>
@@ -33,38 +33,38 @@ const bar = c => ({ left: pct(Math.max(0, c.start - clock.now)), width: pct(c.en
     </div>
     <div v-for="(c, i) in upcoming" :key="c.id" class="row">
       <span class="no">{{ liveIdx + i + 2 }}</span>
-      <span class="cam" :style="{ background: camOf(c.cam).color }">{{ c.cam }}</span>
+      <span class="cam" :style="swatch(camOf(c.cam).color)">{{ c.cam }}</span>
       <span class="cnt">{{ secs(c.end - c.start) }}</span>
       <span class="txt"><i :style="bar(c)"></i><b>{{ c.note || camOf(c.cam).name }}</b></span>
     </div>
     </div>
     <div class="cams">
       <div v-for="x in camTimes" :key="x.cam.id" class="tile" :class="{ onair: x.onair, next: x.isNext, done: x.t == null }">
-        <b>{{ x.t == null ? '—' : secs(x.t) }}</b><span :style="{ background: x.cam.color }">{{ x.cam.id }}</span>
+        <b>{{ x.t == null ? '—' : secs(x.t) }}</b><span :style="swatch(x.cam.color)">{{ x.cam.id }}</span>
       </div>
     </div>
   </div>
 </template>
 
 <style scoped>
-.list { height: 100%; overflow: hidden; background: #0b0b0b; border-left: 3px solid var(--red); display: flex; flex-direction: column; }
+.list { height: 100%; overflow: hidden; background: var(--bg); border-left: 3px solid var(--red); display: flex; flex-direction: column; }
 .row { display: grid; grid-template-columns: 52px 64px 56px 1fr; align-items: center; height: 36px; flex: none; font-size: 17px; text-transform: uppercase; }
-.no { text-align: right; padding-right: 12px; color: #bbb; }
+.no { text-align: right; padding-right: 12px; color: var(--dim); }
 .cam { height: 100%; display: grid; place-items: center; color: #fff; font-weight: 600; font-size: 18px; text-shadow: 0 1px 2px #0006; }
-.cnt { text-align: right; padding-right: 12px; color: #ddd; font-variant-numeric: tabular-nums; }
+.cnt { text-align: right; padding-right: 12px; color: var(--text); font-variant-numeric: tabular-nums; }
 .cnt.red { color: var(--red); font-weight: 700; }
-.txt { position: relative; height: 100%; display: flex; align-items: center; border-left: 1px solid #333; overflow: hidden; }
+.txt { position: relative; height: 100%; display: flex; align-items: center; border-left: .5px solid var(--line); overflow: hidden; }
 .txt i { position: absolute; top: 0; bottom: 0; opacity: .75; }
-.txt b { position: relative; font-weight: 400; padding-left: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #e6e6e6; }
+.txt b { position: relative; font-weight: 400; padding-left: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text); }
 .onair .txt b { color: #fff; font-weight: 600; }
 .onair .txt i { opacity: .9; }
 .rows { flex: 1; min-height: 0; overflow: hidden; }
-.cams { display: flex; overflow-x: auto; flex: none; border-top: 1px solid #333; }
-.tile { flex: 0 0 64px; display: flex; flex-direction: column; text-align: center; border-right: 1px solid #333; }
-.tile b { height: 36px; line-height: 36px; font-size: 17px; font-weight: 400; color: #ddd; font-variant-numeric: tabular-nums; }
+.cams { display: flex; overflow-x: auto; flex: none; border-top: .5px solid var(--line); }
+.tile { flex: 0 0 64px; display: flex; flex-direction: column; text-align: center; border-right: .5px solid var(--line); }
+.tile b { height: 36px; line-height: 36px; font-size: 17px; font-weight: 400; color: var(--dim); font-variant-numeric: tabular-nums; }
 .tile span { height: 36px; display: grid; place-items: center; color: #fff; font-weight: 600; font-size: 18px; text-shadow: 0 1px 2px #0006; }
 .tile.onair b { color: var(--red); font-weight: 700; }
-.tile.next b { color: #3ddc84; font-weight: 700; }
+.tile.next b { color: var(--green); font-weight: 700; }
 .tile.done { opacity: .35; }
 .now { grid-template-columns: 172px 1fr; }
 .now .tc { text-align: right; padding-right: 12px; font-size: 20px; font-weight: 500; color: #fff; }

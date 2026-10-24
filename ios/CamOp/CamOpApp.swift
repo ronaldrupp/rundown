@@ -13,7 +13,7 @@ import SwiftUI
 // What this camera needs at time `now`, mirroring src/CamView.vue
 struct Plan {
   struct Shot: Identifiable { let id: Int; let no: Int; let cam: Int; let start, end: Double; let note: String; var gap: Double? }
-  let all: [Shot], live: Shot?, mine: [Shot], onAir: Bool, next: Shot?, standby: Bool, left: Double?
+  let all: [Shot], live: Shot?, own: [Shot], mine: [Shot], onAir: Bool, next: Shot?, standby: Bool, left: Double?
 
   init(show: Show, cam: Int, now: Double) {
     let s = show.cues.sorted { $0.start < $1.start }
@@ -25,6 +25,7 @@ struct Plan {
     self.live = live
     var own = all.filter { $0.cam == cam }
     for i in own.indices.dropFirst() { own[i].gap = own[i].start - own[i - 1].end } // time to reposition
+    self.own = own
     let mine = own.filter { $0.end > now }, onAir = live?.cam == cam, next = mine.first { $0.start > now }
     (self.mine, self.onAir, self.next) = (mine, onAir, next)
     standby = !onAir && next != nil && next?.no == (liveIdx ?? -1) + 2

@@ -1,6 +1,6 @@
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
-import { show, clock, toggle, seek, tc, parseTc, addCue, snapBeat, spb, rundowns, loadShow, loadMedia, undo, redo } from './store'
+import { FPS, show, clock, toggle, seek, tc, parseTc, addCue, snapBeat, spb, rundowns, loadShow, loadMedia, undo, redo } from './store'
 import { publish, follow, link as syncLink } from './sync'
 import Rundown from './Rundown.vue'
 import CamView from './CamView.vue'
@@ -21,14 +21,16 @@ else {
 const otherDirector = ref(false)
 if (!cam) setInterval(() => (otherDirector.value = performance.now() - syncLink.others < 2000), 1000)
 
-// keys: space = play/pause, 1-9/0 = record a cut to that camera at the playhead, arrows = nudge one bar
+// keys: space = play/pause, 1-9/0 = record a cut to that camera at the playhead, arrows = one frame, shift+arrows = one bar
 function onKey(e) {
   if (e.target.matches('input, select, textarea')) return
   if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'z') { e.preventDefault(); return e.shiftKey ? redo() : undo() }
   if (e.code === 'Space') { e.preventDefault(); toggle() }
   else if (/^[0-9]$/.test(e.key) && show.cams[(+e.key || 10) - 1]) addCue(snapBeat(clock.now), show.cams[(+e.key || 10) - 1].id)
-  else if (e.key === 'ArrowLeft') seek(clock.now - spb() * show.beatsPerBar)
-  else if (e.key === 'ArrowRight') seek(clock.now + spb() * show.beatsPerBar)
+  else if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+    e.preventDefault()
+    seek(clock.now + (e.key === 'ArrowLeft' ? -1 : 1) * (e.shiftKey ? spb() * show.beatsPerBar : 1 / FPS))
+  }
   else if (e.key === 'Home') seek(0)
   else if (e.key === 'l') view.value = view.value === 'live' ? 'rundown' : 'live'
 }
@@ -67,38 +69,58 @@ onUnmounted(() => removeEventListener('keydown', onKey))
 </template>
 
 <style>
-:root { --bg: #000; --panel: #141414; --line: #2a2a2a; --text: #e6e9ef; --dim: #8a93a3; --red: #e5484d; color-scheme: dark; }
+/* Apple HIG dark system colors + Liquid Glass materials; components use these tokens only */
+:root {
+  color-scheme: dark;
+  --bg: #000; --bg2: #1c1c1e; --bg3: #2c2c2e;
+  --text: #fff; --dim: rgba(235, 235, 245, .6); --faint: rgba(235, 235, 245, .3);
+  --line: rgba(84, 84, 88, .65); --fill: rgba(120, 120, 128, .24); --fill-hi: rgba(120, 120, 128, .36);
+  --red: #ff453a; --green: #30d158; --blue: #0a84ff; --orange: #ff9f0a;
+  --glass: rgba(30, 30, 32, .55); --glass-thick: rgba(30, 30, 32, .72);
+  --glass-blur: blur(24px) saturate(180%);
+  /* specular rim: light catches the top edge, a faint ring defines the shape */
+  --rim: inset 0 1px 0 rgba(255, 255, 255, .14), inset 0 0 0 .5px rgba(255, 255, 255, .1);
+  --float: var(--rim), 0 8px 32px rgba(0, 0, 0, .45);
+  --r-sm: 8px; --r: 12px; --r-lg: 20px;
+}
 * { box-sizing: border-box; }
 html, body, #app { margin: 0; height: 100%; }
-body { background: var(--bg); color: var(--text); font: 14px/1.4 'Inter Variable', Inter, system-ui, sans-serif; font-variant-numeric: tabular-nums; }
+body { background: var(--bg); color: var(--text); font: 14px/1.4 -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Inter Variable', Inter, system-ui, sans-serif; font-variant-numeric: tabular-nums; -webkit-font-smoothing: antialiased; }
 #app { display: flex; flex-direction: column; }
-header { display: flex; align-items: center; gap: 24px; padding: 6px 16px; background: #1c1c1c; border-bottom: 1px solid #000; }
-header input { background: none; border: 0; padding: 0; }
-header input:focus { outline: 1px solid #444; }
+header { display: flex; align-items: center; gap: 24px; padding: 8px 16px; background: var(--glass); backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur); box-shadow: var(--rim); border-bottom: .5px solid var(--line); position: relative; z-index: 4; }
+header input { background: none; border: 0; padding: 2px 6px; }
+header input:focus { background: var(--fill); }
 .prod { flex: 1; font-size: 13px; }
 .prod div { display: flex; gap: 6px; align-items: center; }
 .prod input { width: 12em; }
 .ep { font-weight: 600; }
-.badge { background: #2563eb; color: #fff; font-size: 11px; padding: 1px 6px; border-radius: 3px; }
-.badge.out { background: none; border: 1px solid var(--dim); color: var(--dim); }
+.badge { background: var(--blue); color: #fff; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 999px; }
+.badge.out { background: none; box-shadow: inset 0 0 0 1px var(--faint); color: var(--dim); }
 .song { flex: 1; display: flex; align-items: center; gap: 10px; }
-.song .pick { width: 5.5em; color: var(--dim); }
-.song .no { width: 2.2em; height: 36px; text-align: center; font-size: 20px; border: 2px solid #3ddc84 !important; border-radius: 6px; -moz-appearance: textfield; }
+.song .pick { width: 6em; color: var(--dim); }
+.song .no { width: 2.2em; height: 36px; text-align: center; font-size: 20px; font-weight: 600; background: var(--fill); box-shadow: inset 0 0 0 2px var(--green); border-radius: var(--r-sm); -moz-appearance: textfield; }
 .song .no::-webkit-inner-spin-button { display: none; }
 .song div { display: flex; flex-direction: column; font-size: 13px; }
 .song .artist { font-weight: 700; text-transform: uppercase; }
 .ltc { display: flex; align-items: center; gap: 10px; }
-.ltc div { display: flex; flex-direction: column; align-items: center; font-size: 13px; }
+.ltc div { display: flex; flex-direction: column; align-items: center; font-size: 13px; color: var(--dim); }
 .ltc input { width: 7em; text-align: center; color: var(--dim); }
-header .warn { margin-left: auto; color: #f5a524; font-size: 12px; font-weight: 600; }
+header .warn { margin-left: auto; color: var(--orange); font-size: 12px; font-weight: 600; }
 header .warn + button.live { margin-left: 0; }
-button.live { margin-left: auto; padding: 6px 14px; font-weight: 600; background: #2a2a2a; }
+button.live { margin-left: auto; padding: 6px 16px; font-weight: 600; letter-spacing: .04em; }
 button.live.on { background: var(--red); color: #fff; }
 main { flex: 1; min-height: 0; overflow: auto; }
-footer { padding: 4px 12px; color: var(--dim); font-size: 12px; border-top: 1px solid var(--line); }
-button, input, select { font: inherit; color: inherit; background: #222832; border: 1px solid var(--line); border-radius: 4px; padding: 4px 8px; }
-button { cursor: pointer; }
-button:hover { background: #2c3440; }
+footer { padding: 6px 16px; color: var(--dim); font-size: 12px; background: var(--bg2); border-top: .5px solid var(--line); }
+/* controls: capsule glass buttons, filled rounded fields */
+button, input, select { font: inherit; color: inherit; background: var(--fill); border: 0; border-radius: var(--r-sm); padding: 5px 10px; transition: background .15s, transform .15s; }
+button { cursor: pointer; border-radius: 999px; box-shadow: var(--rim); }
+button:hover { background: var(--fill-hi); }
+button:active { transform: scale(.96); }
+:focus-visible { outline: 3px solid color-mix(in srgb, var(--blue) 60%, transparent); outline-offset: 1px; }
+input:focus, select:focus { outline: none; box-shadow: 0 0 0 3px color-mix(in srgb, var(--blue) 50%, transparent); }
 input[type=number] { width: 4.5em; }
+input[type=range], input[type=checkbox] { accent-color: var(--blue); }
 label { display: flex; align-items: center; gap: 4px; color: var(--dim); }
+@media (prefers-reduced-transparency: reduce) { :root { --glass: var(--bg2); --glass-thick: var(--bg2); --glass-blur: none; } }
+@media (prefers-reduced-motion: reduce) { button { transition: none; } button:active { transform: none; } }
 </style>

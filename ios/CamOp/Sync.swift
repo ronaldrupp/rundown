@@ -71,9 +71,10 @@ struct Show: Decodable {
         leader = c.id
         hello() // ask for the rundown; only the new leader's copy is accepted
       }
-      // glide toward the director's time while playing instead of snapping every 100ms (network jitter); jump on seeks
+      // glide toward the director's time while playing; jump on seeks. Wi-Fi delivers late, never early,
+      // so catch up fast but back off slowly, or every delayed burst yanks the clock back
       let drift = c.now - time(at: t)
-      base = c.playing && playing && abs(drift) < 0.25 ? time(at: t) + drift * 0.3 : c.now
+      base = c.playing && playing && abs(drift) < 0.5 ? time(at: t) + drift * (drift > 0 ? 0.5 : 0.05) : c.now
       baseAt = t
       last = t; leaderPlaying = c.playing; playing = c.playing
     default: break

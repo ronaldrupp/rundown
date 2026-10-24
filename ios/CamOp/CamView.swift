@@ -1,4 +1,5 @@
 import SwiftUI
+import AVFoundation
 
 struct CamView: View {
   @State private var sync = Sync()
@@ -6,7 +7,11 @@ struct CamView: View {
   @AppStorage("cam") private var cam = 1
   @AppStorage("waterfall") private var waterfall = true
   @AppStorage("remote") private var remote = false // director remote instead of a camera
+  @AppStorage("pips") private var pips = true
   @State private var settings = false
+  @State private var picked: Plan.Shot? // shot open in the notes sheet
+  @Environment(\.verticalSizeClass) private var vSize // compact: phone held sideways
+  @State private var tone = Pips()
 
   var body: some View {
     TimelineView(.animation) { ctx in
@@ -14,62 +19,97 @@ struct CamView: View {
       let cams = sync.show?.cams ?? []
       let me = cams.first { $0.id == cam }
       let color = Color(hex: me?.color)
+      let mine = remote ? nil : sync.show.map { Plan(show: $0, cam: cam, now: now) }
+      let onAir = mine?.onAir ?? false
+      let n = sync.playing && !onAir ? mine?.left.map { Int($0.rounded(.up)) } : nil // whole seconds to the next cut
       ZStack {
         LinearGradient(colors: [color.opacity(0.35), .black], startPoint: .top, endPoint: .bottom).ignoresSafeArea()
         GlassEffectContainer(spacing: 16) {
+          let flowing = sync.show != nil && waterfall && !remote
           VStack(spacing: 16) {
-            header(me: me, color: color, connected: sync.connected(at: ctx.date), now: now)
+            if flowing, let show = sync.show {
+              // the shot flow scrolls up under the header, the own shots run down to the bottom edge
+              Waterfall(plan: Plan(show: show, cam: cam, now: now), cams: cams, cam: cam, now: now, show: show.title ?? "", pick: { picked = $0 }) {
+                header(connected: sync.connected(at: ctx.date))
+              }
+            } else {
+            header(connected: sync.connected(at: ctx.date))
             if let show = sync.show {
               let plan = Plan(show: show, cam: cam, now: now)
               if remote {
                 DirectorRemote(show: show, sync: sync, now: now)
-              } else if waterfall {
-                Waterfall(plan: plan, cams: cams, cam: cam, color: color, now: now)
               } else {
+              (vSize == .compact ? AnyLayout(HStackLayout(alignment: .top, spacing: 16)) : AnyLayout(VStackLayout(spacing: 16))) {
               hero(plan, color: color)
               LiveScroll(spacing: 10) {
                 section("Your shots")
-                ForEach(plan.mine) { shotRow($0, now: now, cams: cams, live: $0.id == plan.live?.id) }
+                ForEach(plan.mine) { s in Button { picked = s } label: { shotRow(s, now: now, cams: cams, live: s.id == plan.live?.id) }.buttonStyle(.plain) }
                 if plan.mine.isEmpty { Text("No more shots").foregroundStyle(.secondary) }
                 section("Shot flow")
-                ForEach(plan.all.filter { $0.end > now }) { shotRow($0, now: now, cams: cams, live: $0.id == plan.live?.id) }
+                ForEach(plan.all.filter { $0.end > now }) { s in Button { picked = s } label: { shotRow(s, now: now, cams: cams, live: s.id == plan.live?.id) }.buttonStyle(.plain) }
+              }
               }
               }
             } else {
               ContentUnavailableView("Waiting for the director", systemImage: "antenna.radiowaves.left.and.right",
                                      description: Text("Start the director view on \(host)"))
             }
+            }
           }
-          .padding()
+          .padding(flowing ? .horizontal : .all) // flowing lists touch the safe area edges, so they scroll on under the status bar and home indicator
         }
         // tally frame like the web view: follows the display's rounded corners, a soft glow fading inward
-        let onAir = !remote && sync.show.map { Plan(show: $0, cam: cam, now: now).onAir } ?? false
-        TallyFrame().opacity(onAir ? 1 : 0) // no fade: it must show the instant the cut happens
+        TallyFrame(color: onAir ? .red : .green).opacity(onAir || mine?.standby == true ? 1 : 0) // no fade: it must show the instant the cut happens
       }
+      .onChange(of: onAir) { _, on in if on && sync.playing { cue(1500, ms: 400) } }
+      .onChange(of: n) { _, n in if let n, (1...3).contains(n) { cue(1000, ms: 90) } }
     }
     .task(id: host) { await sync.run(host: host) }
-    .sheet(isPresented: $settings) { SettingsSheet(host: $host, cam: $cam, remote: $remote, cams: sync.show?.cams ?? []) }
+    .sheet(item: $picked) { s in ShotNotes(s: s, cam: sync.show?.cams.first { $0.id == s.cam }, show: sync.show?.title ?? "") }
+    .sheet(isPresented: $settings) { SettingsSheet(host: $host, remote: $remote) }
   }
 
-  private func header(me: Cam?, color: Color, connected: Bool, now: Double) -> some View {
-    HStack {
-      Text(remote ? "DIRECTOR" : "CAM \(cam)").font(.title2.bold())
-      Text((remote ? sync.show?.title : me?.name) ?? "").font(.headline).foregroundStyle(.secondary).lineLimit(1)
-      Spacer()
-      Text(clock(now)).font(.headline.monospacedDigit())
-      Circle().fill(connected ? .green : .red).frame(width: 10, height: 10)
-        .accessibilityLabel(connected ? "Connected" : "Not connected")
-      if !remote {
-        Button { waterfall.toggle() } label: { Image(systemName: waterfall ? "rectangle.grid.1x2" : "chart.bar.xaxis") }
-          .buttonStyle(.glass)
-          .accessibilityLabel(waterfall ? "Show cards" : "Show waterfall")
+  private func cue(_ freq: Double, ms: Double) {
+    guard pips else { return }
+    tone.pip(freq, ms: ms)
+  }
+
+  private func header(connected: Bool) -> some View {
+    HStack(alignment: .top) {
+      // tap the camera to switch which one this device follows (or the director remote)
+      Menu {
+        Picker("View", selection: Binding(get: { remote ? -1 : cam }, set: { remote = $0 == -1; if $0 != -1 { cam = $0 } })) {
+          ForEach(sync.show?.cams ?? []) { Text("CAM \($0.id)  \($0.name)").tag($0.id) }
+          Text("Director remote").tag(-1)
+        }
+      } label: {
+        HStack(spacing: 8) {
+          Circle().fill(connected ? .green : .red).frame(width: 8, height: 8)
+            .accessibilityLabel(connected ? "Connected" : "Not connected")
+          Text(remote ? "DIRECTOR" : "CAM \(cam)").font(.title2.bold())
+          Image(systemName: "chevron.down").font(.footnote.bold()).foregroundStyle(.secondary)
+        }
+        .padding(.horizontal, 20).padding(.vertical, 12)
       }
-      Button { settings = true } label: { Image(systemName: "gearshape") }
-        .buttonStyle(.glass)
-        .accessibilityLabel("Settings")
+      .buttonStyle(.plain)
+      .accessibilityLabel(remote ? "Director remote, change view" : "Camera \(cam), change camera")
+      .glassEffect(.clear.interactive(), in: .capsule) // untinted, so the shot rows read through as they scroll under
+      Spacer(minLength: 8)
+      // controls float as their own glass group on the right
+      HStack(spacing: 4) {
+        if !remote {
+          Button { pips.toggle() } label: { Image(systemName: pips ? "speaker.wave.2" : "speaker.slash").frame(width: 44, height: 44) }
+            .accessibilityLabel(pips ? "Mute countdown pips" : "Unmute countdown pips")
+          Button { waterfall.toggle() } label: { Image(systemName: waterfall ? "rectangle.grid.1x2" : "chart.bar.xaxis").frame(width: 44, height: 44) }
+            .accessibilityLabel(waterfall ? "Show cards" : "Show waterfall")
+        }
+        Button { settings = true } label: { Image(systemName: "gearshape").frame(width: 44, height: 44) }
+          .accessibilityLabel("Settings")
+      }
+      .font(.title3).buttonStyle(.plain)
+      .padding(4)
+      .glassEffect(.clear.interactive(), in: .capsule)
     }
-    .padding(.horizontal, 20).padding(.vertical, 12)
-    .glassEffect(.regular.tint(remote ? .clear : color.opacity(0.4)), in: .capsule)
   }
 
   private func hero(_ p: Plan, color: Color) -> some View {
@@ -108,15 +148,15 @@ struct CamView: View {
     Text(t.uppercased()).font(.caption.bold()).foregroundStyle(.secondary).padding(.top, 8)
   }
   private func dur(_ d: Double) -> String { d < 10 ? String(format: "%.1fs", d) : "\(Int(d.rounded()))s" }
-  private func clock(_ t: Double) -> String { String(format: "%d:%02d", Int(t) / 60, Int(t) % 60) }
 }
 
 // stroke is centred on the shape, so the outer half of each width falls off the display
 struct TallyFrame: View {
+  let color: Color
   var body: some View {
     ZStack {
-      ConcentricRectangle().stroke(.red.opacity(0.7), lineWidth: 20).blur(radius: 7)
-      ConcentricRectangle().stroke(.red, lineWidth: 8).blur(radius: 1.5)
+      ConcentricRectangle().stroke(color.opacity(0.7), lineWidth: 20).blur(radius: 7)
+      ConcentricRectangle().stroke(color, lineWidth: 8).blur(radius: 1.5)
     }
     .ignoresSafeArea().allowsHitTesting(false)
   }
@@ -124,37 +164,88 @@ struct TallyFrame: View {
 
 // The web cam view's waterfall (src/CamView.vue): each shot's bar slides in from the right across a
 // 16 second window, the whole cut flow on top, a countdown band, then this camera's own shots.
-struct Waterfall: View {
-  let plan: Plan, cams: [Cam], cam: Int, color: Color, now: Double
-  private let window = 16.0
+struct Waterfall<Header: View>: View {
+  let plan: Plan, cams: [Cam], cam: Int, now: Double
+  let show: String, pick: (Plan.Shot) -> Void
+  @ViewBuilder var header: Header
+  @Environment(\.verticalSizeClass) private var vSize
+  // drag the countdown band to share height between shot flow and own shots, like the web view
+  @AppStorage("camSplit") private var split = 0.5
+  @State private var box = CGRect.zero // the stack in screen coordinates
+  @State private var dragFrom: Double?
+  @State private var snapped = false
+  private let window = 16.0, bandHeight = 60.0
 
   var body: some View {
-    VStack(spacing: 8) {
-      LiveScroll(spacing: 3) { ForEach(plan.all.filter { $0.end > now }) { ShotRow(s: $0, cams: cams, now: now, live: $0.id == plan.live?.id, outlined: $0.cam == cam) } }
-        .frame(maxHeight: .infinity)
-      band
-      LiveScroll(spacing: 3) {
-        ForEach(plan.mine) { ShotRow(s: $0, cams: cams, now: now, live: $0.id == plan.live?.id, showGap: true) }
-        if plan.mine.isEmpty { Text("No more shots for camera \(cam).").foregroundStyle(.secondary).padding() }
+    if vSize == .compact {
+      // phone on its side: shot flow left, countdown and own shots right, header across both
+      HStack(spacing: 12) {
+        flow
+        VStack(spacing: 8) { band; own }
       }
-      .frame(maxHeight: .infinity)
+      .safeAreaInset(edge: .top, spacing: 8) { header }
+    } else {
+      let lists = max(1, box.height - bandHeight - 16)
+      VStack(spacing: 8) {
+        flow.safeAreaInset(edge: .top, spacing: 16) { header }
+          .frame(height: lists * split)
+        band
+          .frame(height: bandHeight)
+          .contentShape(.rect)
+          .gesture(DragGesture(coordinateSpace: .global).onChanged { v in // global: the band moves under the finger
+            let from = dragFrom ?? split
+            dragFrom = from
+            // snap the band's centre to the screen's vertical centre when it comes within 20pt
+            let screenMid = UIApplication.shared.connectedScenes.compactMap { ($0 as? UIWindowScene)?.screen.bounds.midY }.first ?? 0
+            let centre = (screenMid - box.minY - 8 - bandHeight / 2) / lists, to = from + v.translation.height / lists
+            snapped = abs(to - centre) * lists < 20
+            split = min(0.85, max(0.15, snapped ? centre : to))
+          }.onEnded { _ in dragFrom = nil; snapped = false })
+          .sensoryFeedback(.alignment, trigger: snapped) { _, now in now }
+          .accessibilityElement(children: .combine)
+          .accessibilityHint("Swipe up or down to resize the shot lists")
+          .accessibilityAdjustableAction { split = min(0.85, max(0.15, split + ($0 == .increment ? 0.05 : -0.05))) }
+        own
+      }
+      .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { box = $0 }
+
     }
+  }
+
+  // past shots stay above the live one and scroll on up under the floating header
+  private var flow: some View {
+    LiveScroll(spacing: 3, live: plan.live?.id) { ForEach(plan.all) { s in
+      Button { pick(s) } label: { ShotRow(s: s, cams: cams, now: now, live: s.id == plan.live?.id, outlined: s.cam == cam) }.buttonStyle(.plain)
+    } }
+    .frame(maxHeight: .infinity)
+  }
+
+  private var own: some View {
+    LiveScroll(spacing: 3, live: plan.mine.first?.id) {
+      ForEach(plan.own) { s in Button { pick(s) } label: { MyShotRow(s: s, cams: cams, now: now, live: s.id == plan.live?.id,
+        memo: UserDefaults.standard.string(forKey: ShotNotes.key(show, s.id)) ?? "") }.buttonStyle(.plain) }
+      if plan.mine.isEmpty { Text("No more shots for camera \(cam).").foregroundStyle(.secondary).padding() }
+    }
+    .frame(maxHeight: .infinity)
   }
 
   private var band: some View {
     let tint: Color = plan.onAir ? .red : plan.standby ? .green : .clear
-    return HStack(spacing: 12) {
-      Text("\(cam)").font(.title2.weight(.heavy)).frame(width: 52, height: 44).background(color, in: .rect(cornerRadius: 12))
-      Text(plan.left.map { "\(Int(max(0, $0).rounded(.up)))" } ?? "–").font(.title.weight(.heavy).monospacedDigit()).frame(width: 56)
+    // the countdown track starts and ends where the shot bars do, so all share one playhead
+    return HStack(spacing: 0) {
+      VStack(spacing: 0) {
+        Text(plan.left.map { "\(Int(max(0, $0).rounded(.up)))" } ?? "–").font(.title.weight(.heavy).monospacedDigit())
+        Text(plan.onAir ? "ON AIR" : plan.standby ? "STANDBY" : plan.next != nil ? "NEXT IN" : "DONE")
+          .font(.caption2.weight(.heavy)).tracking(1)
+      }
+      .frame(width: TimeBar.start)
       GeometryReader { g in
         Rectangle().fill(plan.standby ? .black : .white).frame(width: g.size.width * min(plan.left ?? 0, window) / window)
       }
       .frame(height: 26)
-      Text(plan.onAir ? "ON AIR" : plan.standby ? "STANDBY" : plan.next != nil ? "NEXT IN" : "DONE")
-        .font(.footnote.weight(.heavy)).tracking(1)
     }
     .foregroundStyle(plan.standby ? .black : .white)
-    .padding(8)
+    .padding(.vertical, 8)
     .glassEffect(.regular.tint(tint.opacity(0.8)), in: .rect(cornerRadius: 18))
   }
 }
@@ -162,36 +253,73 @@ struct Waterfall: View {
 // One waterfall row: the shot's bar slides in from the right across a 16 second window
 struct ShotRow: View {
   let s: Plan.Shot, cams: [Cam], now: Double, live: Bool
-  var outlined = false, showGap = false
-  private let window = 16.0
+  var outlined = false
 
   var body: some View {
     let c = cams.first { $0.id == s.cam }
     HStack(spacing: 0) {
       Text("\(s.no)").font(.subheadline.monospacedDigit()).foregroundStyle(.secondary).frame(width: 36, alignment: .trailing).padding(.trailing, 8)
       Text("\(s.cam)").font(.title2.bold()).frame(width: 52).frame(maxHeight: .infinity).background(Color(hex: c?.color))
+      // only the bar slides; the description stays put at the left
       ZStack(alignment: .leading) {
-        GeometryReader { g in
-          Rectangle().fill(Color(hex: c?.color).opacity(0.55))
-            .frame(width: g.size.width * max(0, s.end - max(s.start, now)) / window)
-            .offset(x: g.size.width * max(0, s.start - now) / window)
-        }
+        TimeBar(s: s, color: Color(hex: c?.color).opacity(0.55), now: now)
         VStack(alignment: .leading, spacing: 1) {
-          HStack(spacing: 24) {
-            Text(dur(s.end - s.start))
-            if let gap = s.gap, showGap { Text("+\(Int(gap.rounded()))s").foregroundStyle(.tertiary) }
-          }
-          .font(.caption.monospacedDigit()).foregroundStyle(.secondary)
+          Text(dur(s.end - s.start)).font(.caption.monospacedDigit()).foregroundStyle(.secondary)
           Text((s.note.isEmpty ? c?.name ?? "" : s.note).uppercased()).font(.subheadline.weight(live ? .bold : .regular)).lineLimit(1)
         }
         .padding(.horizontal, 8)
       }
-      .clipped()
+      .frame(maxWidth: .infinity, alignment: .leading)
     }
     .frame(height: 50)
     .background(.white.opacity(0.07))
     .clipShape(.rect(cornerRadius: 10))
     .overlay { if outlined { RoundedRectangle(cornerRadius: 10).strokeBorder(.white.opacity(0.35), lineWidth: 2) } }
+    .opacity(s.end <= now ? 0.4 : 1)
+  }
+  private func dur(_ d: Double) -> String { d < 10 ? String(format: "%.1fs", d) : "\(Int(d.rounded()))s" }
+}
+
+// The shot's bar sliding in from the right across a 16 second window, shrinking into the left edge while live
+struct TimeBar: View {
+  static let start: CGFloat = 96 // every row's bar area begins here: number column + camera column
+  let s: Plan.Shot, color: Color, now: Double
+  private let window = 16.0
+
+  var body: some View {
+    GeometryReader { g in
+      Rectangle().fill(color)
+        .frame(width: g.size.width * max(0, s.end - max(s.start, now)) / window)
+        .offset(x: g.size.width * max(0, s.start - now) / window)
+    }
+    .clipped()
+  }
+}
+
+// This camera's own upcoming shot: a list entry over its sliding bar, so the operator can read
+// what to frame, when it goes live and how long it lasts and how long the reset is after it.
+struct MyShotRow: View {
+  let s: Plan.Shot, cams: [Cam], now: Double, live: Bool
+  var memo = "" // the operator's own note from the shot sheet
+
+  var body: some View {
+    let c = cams.first { $0.id == s.cam }
+    HStack(spacing: 12) {
+      Text("\(s.no)").font(.subheadline.monospacedDigit()).foregroundStyle(.secondary).frame(width: 36, alignment: .trailing)
+      RoundedRectangle(cornerRadius: 3).fill(Color(hex: c?.color)).frame(width: 6)
+      VStack(alignment: .leading, spacing: 2) {
+        Text(s.note.isEmpty ? c?.name ?? "" : s.note).font(.title3.weight(live ? .bold : .regular)).lineLimit(2)
+        Text(dur(s.end - s.start) + (s.gap.map { " · \(dur($0)) reset" } ?? "")).font(.caption.monospacedDigit()).foregroundStyle(.secondary)
+        if !memo.isEmpty { Label(memo, systemImage: "note.text").font(.subheadline).foregroundStyle(.yellow).lineLimit(3) }
+      }
+      Spacer()
+      Text(live ? "LIVE" : s.end <= now ? "done" : "in \(dur(s.start - now))").font(.title3.monospacedDigit().bold())
+    }
+    .padding(.horizontal, 8).padding(.vertical, 10)
+    .background { TimeBar(s: s, color: Color(hex: c?.color).opacity(0.35), now: now).padding(.leading, TimeBar.start) } // same playhead as the shot flow
+    .background(live ? .red.opacity(0.35) : .white.opacity(0.07))
+    .clipShape(.rect(cornerRadius: 10))
+    .opacity(s.end <= now ? 0.4 : 1)
   }
   private func dur(_ d: Double) -> String { d < 10 ? String(format: "%.1fs", d) : "\(Int(d.rounded()))s" }
 }
@@ -211,8 +339,8 @@ struct DirectorRemote: View {
       }
       .fixedSize(horizontal: false, vertical: true)
       // tap a shot to jump the show there
-      LiveScroll(spacing: 3) {
-        ForEach(plan.all.filter { $0.end > now }) { s in
+      LiveScroll(spacing: 3, live: plan.live?.id) {
+        ForEach(plan.all) { s in
           Button { sync.control("seek", t: s.start) } label: { ShotRow(s: s, cams: show.cams, now: now, live: s.id == plan.live?.id) }
             .buttonStyle(.plain)
             .accessibilityHint("Jumps the show to this cut")
@@ -254,32 +382,76 @@ struct DirectorRemote: View {
   }
 }
 
-// Shot list that starts at the live shot; scroll ahead freely, "Back to live" returns to the top
+// Shot list that keeps the live row at the top; scroll back or ahead freely, "Back to live" resumes following
 struct LiveScroll<Content: View>: View {
   var spacing: CGFloat
+  var live: Int? = nil // id of the row to follow; nil follows the top
   @ViewBuilder var content: Content
-  @State private var position = ScrollPosition(edge: .top)
   @State private var away = false
 
   var body: some View {
-    ScrollView { VStack(alignment: .leading, spacing: spacing) { content } }
+    // ScrollViewReader: ScrollPosition.scrollTo(id:anchor: .top) left the live row low in the list
+    ScrollViewReader { proxy in
+      ScrollView {
+        VStack(alignment: .leading, spacing: spacing) {
+          Color.clear.frame(height: 0).id(Self.top)
+          content
+        }
+      }
       .scrollIndicators(.hidden)
-      .scrollPosition($position)
-      .onScrollGeometryChange(for: Bool.self) { $0.contentOffset.y + $0.contentInsets.top > 8 } action: { away = $1 }
+      .onScrollPhaseChange { _, phase in if phase == .interacting { away = true } }
+      .onChange(of: live, initial: true) { if !away { withAnimation(.smooth(duration: 0.25)) { follow(proxy) } } }
+      // re-align when the list resizes (first layout, dragging the split)
+      .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { _ in if !away { follow(proxy) } }
       .overlay(alignment: .bottom) {
         if away {
-          Button("Back to live", systemImage: "arrow.up.to.line") { withAnimation { position.scrollTo(edge: .top) } }
+          Button("Back to live", systemImage: "dot.radiowaves.left.and.right") { away = false; withAnimation { follow(proxy) } }
             .buttonStyle(.glassProminent).tint(.red).padding(8)
         }
       }
+    }
+  }
+
+  private static var top: Int { Int.min }
+  private func follow(_ proxy: ScrollViewProxy) { proxy.scrollTo(live ?? Self.top, anchor: .top) }
+}
+
+// A shot's details and the operator's own notes for it, kept on this device only
+struct ShotNotes: View {
+  let s: Plan.Shot, cam: Cam?
+  @AppStorage private var text: String
+  @Environment(\.dismiss) private var dismiss
+
+  // shortcut: keyed by show title and cue id, so untitled shows share notes; key by a show id if the director sends one
+  init(s: Plan.Shot, cam: Cam?, show: String) {
+    self.s = s; self.cam = cam
+    _text = AppStorage(wrappedValue: "", Self.key(show, s.id))
+  }
+  static func key(_ show: String, _ id: Int) -> String { "note.\(show).\(id)" }
+
+  var body: some View {
+    NavigationStack {
+      Form {
+        Section {
+          LabeledContent("Camera", value: "CAM \(s.cam)" + (cam.map { "  \($0.name)" } ?? ""))
+          LabeledContent("Length", value: String(format: "%.1fs", s.end - s.start))
+          if !s.note.isEmpty { Text(s.note.uppercased()).font(.headline) }
+        }
+        Section("My notes") {
+          TextEditor(text: $text).frame(minHeight: 160)
+        }
+      }
+      .navigationTitle("Shot \(s.no)")
+      .navigationBarTitleDisplayMode(.inline)
+      .toolbar { Button("Done") { dismiss() } }
+    }
+    .presentationDetents([.medium, .large])
   }
 }
 
 struct SettingsSheet: View {
   @Binding var host: String
-  @Binding var cam: Int
   @Binding var remote: Bool
-  let cams: [Cam]
   @State private var draft = ""
   @Environment(\.dismiss) private var dismiss
 
@@ -295,12 +467,6 @@ struct SettingsSheet: View {
         } footer: {
           Text("Shows the whole cut flow with play, pause and seek. The director's browser window stays the host.")
         }
-        if !remote { Section("Camera") {
-          Picker("Camera", selection: $cam) {
-            ForEach(cams.isEmpty ? [Cam(id: cam, name: "", color: "")] : cams) { Text("CAM \($0.id)  \($0.name)").tag($0.id) }
-          }
-          .pickerStyle(.inline).labelsHidden()
-        } }
       }
       .navigationTitle("Settings")
       .toolbar { Button("Done") { host = draft.trimmingCharacters(in: .whitespaces); dismiss() } }
@@ -313,5 +479,33 @@ extension Color {
   init(hex: String?) {
     let v = UInt64((hex ?? "").dropFirst(), radix: 16) ?? 0x8e8e93
     self.init(red: Double(v >> 16 & 0xff) / 255, green: Double(v >> 8 & 0xff) / 255, blue: Double(v & 0xff) / 255)
+  }
+}
+
+// Countdown pips and haptics, same as the web cam view's speaker toggle: short at 3, 2, 1, long at the cut.
+// Plays through the silent switch, mixed with whatever else is playing.
+@MainActor final class Pips {
+  private let engine = AVAudioEngine(), player = AVAudioPlayerNode()
+  private let format = AVAudioFormat(standardFormatWithSampleRate: 44100, channels: 1)!
+
+  init() {
+    engine.attach(player)
+    engine.connect(player, to: engine.mainMixerNode, format: format)
+  }
+
+  func pip(_ freq: Double, ms: Double) {
+    let n = AVAudioFrameCount(44100 * ms / 1000), ramp = 0.005 * 44100
+    guard let buf = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: n) else { return }
+    buf.frameLength = n
+    for i in 0..<Int(n) {
+      let edge = min(Double(i), Double(Int(n) - i)) / ramp // short ramps avoid clicks
+      buf.floatChannelData![0][i] = Float(0.5 * min(1, edge) * sin(2 * .pi * freq * Double(i) / 44100))
+    }
+    try? AVAudioSession.sharedInstance().setCategory(.playback, options: .mixWithOthers)
+    try? AVAudioSession.sharedInstance().setActive(true)
+    if !engine.isRunning { try? engine.start() }
+    player.play()
+    player.scheduleBuffer(buf)
+    UIImpactFeedbackGenerator(style: ms > 200 ? .heavy : .light).impactOccurred()
   }
 }
