@@ -133,6 +133,35 @@ Put it behind an HTTPS proxy (Caddy, nginx, or a platform like Fly.io) that sets
 
 For a real show, run the same server on a machine in the production network instead. Then the show doesn't depend on the venue's internet.
 
+### Docker (for example a DigitalOcean Droplet)
+
+`docker-compose.yml` runs everything: the app, and [Caddy](https://caddyserver.com) in front of it for HTTPS. Caddy gets and renews a Let's Encrypt certificate on its own. `yt-dlp` and `ffmpeg` are in the image. On the server you only need Docker:
+
+1. Create an Ubuntu Droplet (the smallest size is enough) and point your domain's DNS `A` record at its IP.
+2. Allow ports 80 and 443 in the Droplet's firewall. Let's Encrypt uses port 80 to verify the domain.
+3. Install Docker and start the app:
+
+   ```bash
+   curl -fsSL https://get.docker.com | sh
+   git clone https://github.com/ronaldrupp/rundown.git && cd rundown
+   echo "DOMAIN=rundown.example.com" > .env
+   docker compose up -d --build
+   ```
+
+4. Open `https://rundown.example.com` and create the first director account. Add more directors with:
+
+   ```bash
+   docker compose exec -u node rundown npm run user add jane@example.com
+   ```
+
+Accounts and rundowns live in the `data` volume, certificates in `caddy_data`, and videos in `./media` next to the compose file. To update, run `git pull && docker compose up -d --build`. Unsaved edits are written to the database before the container stops.
+
+Without `DOMAIN`, Caddy serves `https://localhost` with a self-signed certificate, which is handy for trying it out. On a show network without internet, set `DOMAIN=:80` for plain HTTP and connect with `http://<server-ip>/`.
+
+`yt-dlp` is fetched at build time. When YouTube downloads start failing, rebuild with `docker compose build --no-cache` to get a newer one, or pin a release with `--build-arg YT_DLP_VERSION=2026.10.21`. YouTube often blocks downloads from cloud servers, so you may have to import videos on your own machine and copy them into `media/`.
+
+Don't use DigitalOcean's App Platform (or Cloud Run). The server must run as a single instance, and it keeps SQLite and videos on local disk, which those platforms wipe on every deploy.
+
 ## iPhone and iPad app
 
 `ios/` holds a native SwiftUI app (iOS 26, Liquid Glass) that follows the director's window through the same server as the browser camera views. The web director stays the host. Tap the camera in the header to pick a camera or the director remote:

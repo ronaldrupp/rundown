@@ -1,0 +1,15 @@
+node_modules
+dist
+media
+data
+ios
+docs
+.git
+.claude
+.DS_Store
+Dockerfile
+docker-compose.yml
+.env
+.env.example
+Caddyfile
+.dockerignore
