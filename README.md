@@ -133,6 +133,20 @@ Put it behind an HTTPS proxy (Caddy, nginx, or a platform like Fly.io) that sets
 
 For a real show, run the same server on a machine in the production network instead. Then the show doesn't depend on the venue's internet.
 
+### Docker
+
+The image builds the app and runs `npm start`, with `yt-dlp` and `ffmpeg` included:
+
+```bash
+mkdir -p media
+docker compose up -d --build
+docker compose exec rundown npm run user add jane@example.com
+```
+
+Open http://localhost:5173 and create the first director account. The database lives in the `data` volume, and videos in `./media` on the host. The container runs as uid 1000, so on Linux `media/` must be writable by that user; create it yourself before the first start, or Docker creates it owned by root. The port is published on all interfaces so camera devices can connect. Behind a reverse proxy on the same host, change it to `"127.0.0.1:5173:5173"` in [`docker-compose.yml`](docker-compose.yml).
+
+`yt-dlp` is fetched at build time. When YouTube downloads start failing, rebuild with `docker compose build --no-cache` to get a newer one, or pin a release with `--build-arg YT_DLP_VERSION=2026.10.21`.
+
 ## iPhone and iPad app
 
 `ios/` holds a native SwiftUI app (iOS 26, Liquid Glass) that follows the director's window through the same server as the browser camera views. The web director stays the host. Tap the camera in the header to pick a camera or the director remote:

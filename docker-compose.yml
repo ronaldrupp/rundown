@@ -1,0 +1,17 @@
+services:
+  rundown:
+    build: .
+    image: rundown
+    ports:
+      # all interfaces, so camera devices on the network can connect;
+      # use "127.0.0.1:5173:5173" behind a reverse proxy on the same host
+      - "5173:5173"
+    volumes:
+      # accounts, sessions and rundowns (SQLite)
+      - data:/data
+      # downloaded videos, also where you drop your own reference files
+      - ./media:/app/media
+    restart: unless-stopped
+
+volumes:
+  data:
