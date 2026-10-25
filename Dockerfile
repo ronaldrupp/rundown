@@ -27,10 +27,11 @@ RUN npm ci --omit=dev && npm cache clean --force
 COPY server server
 COPY --from=build /app/dist dist
 # the server writes downloads to ./media and the SQLite database to $DATA_DIR
-RUN mkdir -p media /data && chown node:node media /data
-USER node
+RUN mkdir -p media /data
+COPY docker-entrypoint.sh /usr/local/bin/
 
 EXPOSE 5173
 VOLUME ["/data"]
-HEALTHCHECK --interval=30s --timeout=5s CMD node -e "fetch('http://localhost:'+process.env.PORT+'/api/me').then(r=>process.exit(r.ok?0:1),()=>process.exit(1))"
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --start-interval=1s CMD node -e "fetch('http://localhost:'+process.env.PORT+'/api/me').then(r=>process.exit(r.ok?0:1),()=>process.exit(1))"
+ENTRYPOINT ["docker-entrypoint.sh"]
 CMD ["node", "server/index.js"]

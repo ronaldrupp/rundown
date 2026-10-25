@@ -133,19 +133,34 @@ Put it behind an HTTPS proxy (Caddy, nginx, or a platform like Fly.io) that sets
 
 For a real show, run the same server on a machine in the production network instead. Then the show doesn't depend on the venue's internet.
 
-### Docker
+### Docker (for example a DigitalOcean Droplet)
 
-The image builds the app and runs `npm start`, with `yt-dlp` and `ffmpeg` included:
+`docker-compose.yml` runs everything: the app, and [Caddy](https://caddyserver.com) in front of it for HTTPS. Caddy gets and renews a Let's Encrypt certificate on its own. `yt-dlp` and `ffmpeg` are in the image. On the server you only need Docker:
 
-```bash
-mkdir -p media
-docker compose up -d --build
-docker compose exec rundown npm run user add jane@example.com
-```
+1. Create an Ubuntu Droplet (the smallest size is enough) and point your domain's DNS `A` record at its IP.
+2. Allow ports 80 and 443 in the Droplet's firewall. Let's Encrypt uses port 80 to verify the domain.
+3. Install Docker and start the app:
 
-Open http://localhost:5173 and create the first director account. The database lives in the `data` volume, and videos in `./media` on the host. The container runs as uid 1000, so on Linux `media/` must be writable by that user; create it yourself before the first start, or Docker creates it owned by root. The port is published on all interfaces so camera devices can connect. Behind a reverse proxy on the same host, change it to `"127.0.0.1:5173:5173"` in [`docker-compose.yml`](docker-compose.yml).
+   ```bash
+   curl -fsSL https://get.docker.com | sh
+   git clone https://github.com/ronaldrupp/rundown.git && cd rundown
+   echo "DOMAIN=rundown.example.com" > .env
+   docker compose up -d --build
+   ```
 
-`yt-dlp` is fetched at build time. When YouTube downloads start failing, rebuild with `docker compose build --no-cache` to get a newer one, or pin a release with `--build-arg YT_DLP_VERSION=2026.10.21`.
+4. Open `https://rundown.example.com` and create the first director account. Add more directors with:
+
+   ```bash
+   docker compose exec -u node rundown npm run user add jane@example.com
+   ```
+
+Accounts and rundowns live in the `data` volume, certificates in `caddy_data`, and videos in `./media` next to the compose file. To update, run `git pull && docker compose up -d --build`. Unsaved edits are written to the database before the container stops.
+
+Without `DOMAIN`, Caddy serves `https://localhost` with a self-signed certificate, which is handy for trying it out. On a show network without internet, set `DOMAIN=:80` for plain HTTP and connect with `http://<server-ip>/`.
+
+`yt-dlp` is fetched at build time. When YouTube downloads start failing, rebuild with `docker compose build --no-cache` to get a newer one, or pin a release with `--build-arg YT_DLP_VERSION=2026.10.21`. YouTube often blocks downloads from cloud servers, so you may have to import videos on your own machine and copy them into `media/`.
+
+Don't use DigitalOcean's App Platform (or Cloud Run). The server must run as a single instance, and it keeps SQLite and videos on local disk, which those platforms wipe on every deploy.
 
 ## iPhone and iPad app
 

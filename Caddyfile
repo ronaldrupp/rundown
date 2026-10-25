@@ -1,0 +1,6 @@
+# HTTPS in front of the Rundown server: Caddy gets and renews a Let's Encrypt certificate
+# for $DOMAIN and passes everything through (app, /api, /media, the /ws websocket).
+# DOMAIN=:80 serves plain HTTP instead, for a show network without internet.
+{$DOMAIN:localhost} {
+	reverse_proxy rundown:5173
+}

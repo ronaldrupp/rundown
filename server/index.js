@@ -115,7 +115,7 @@ if (!dev && !existsSync('dist/index.html')) { console.error('No dist/ build. Run
 // ---- sync: one room per director account. The director window publishes the rundown and clock,
 // camera views (join code) and the iOS director remote (login token) listen. Messages are {event, data},
 // the shape src/sync.js and the iOS app already used over Vite's websocket.
-const rooms = new Map() // user id -> { sockets: Set, leader, show, showFrom, saveTimer }
+const rooms = new Map() // user id -> { sockets: Set, leader, show, showFrom, saveTimer, save }
 const room = id => rooms.get(id) ?? rooms.set(id, { sockets: new Set(), leader: null, show: JSON.parse(loadShow(id) ?? 'null'), showFrom: null }).get(id)
 const msg = (event, data) => JSON.stringify({ event, data })
 
@@ -161,7 +161,8 @@ function enter(ws, r, role, userId) {
       r.show = m.data.show
       r.showFrom = m.data.id
       clearTimeout(r.saveTimer) // edits arrive per keystroke; write once they settle
-      r.saveTimer = setTimeout(() => saveShow(userId, JSON.stringify(r.show)), 1000)
+      r.save = () => { r.save = null; saveShow(userId, JSON.stringify(r.show)) }
+      r.saveTimer = setTimeout(r.save, 1000)
     }
     if (m.event === 'rundown:show' || m.event === 'rundown:clock') others(s => s.send(raw.toString()))
   })
@@ -170,5 +171,11 @@ function enter(ws, r, role, userId) {
     if (r.leader === ws) r.leader = [...r.sockets].find(s => s.role === 'director') ?? null
   })
 }
+
+// docker stop / redeploys send SIGTERM: write rundown edits still waiting on their save timer first
+for (const sig of ['SIGTERM', 'SIGINT']) process.on(sig, () => {
+  for (const r of rooms.values()) { clearTimeout(r.saveTimer); r.save?.() }
+  process.exit(0)
+})
 
 server.listen(PORT, () => console.log(`Rundown ${dev ? 'dev server' : 'server'} on http://localhost:${PORT}`))

@@ -8,3 +8,5 @@ ios/build/
 xcuserdata/
 # director accounts, sessions and rundowns (SQLite)
 data/
+# deployment settings (copy from .env.example)
+.env
