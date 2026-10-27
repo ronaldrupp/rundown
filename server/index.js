@@ -3,13 +3,15 @@ import { spawn } from 'node:child_process'
 import { createReadStream, existsSync, mkdirSync, statSync } from 'node:fs'
 import { extname, join, normalize } from 'node:path'
 import { WebSocketServer } from 'ws'
-import { userCount, addUser, checkPassword, newSession, endSession, sessionUser, userByCode, loadShow, saveShow } from './db.js'
+import { userCount, addUser, setUser, checkPassword, newSession, endSession, sessionUser, userByCode, loadShow, saveShow, saveItem, loadItem, loadLibrary, saveLibrary } from './db.js'
 
 // One process for the whole app: login API, YouTube import, the sync websocket, and the web app itself
 // (Vite in middleware mode with --dev, the built dist/ otherwise). PORT defaults to 5173, as before.
 const dev = process.argv.includes('--dev')
 const PORT = +process.env.PORT || 5173
 const MAX_BODY = 5e6 // rundowns are a few hundred KB at most
+// shortcut: a fixed login for local work, only with `npm run dev` (the repo is public, so never in `npm start`)
+if (process.argv.includes('--dev-user')) setUser('dev@rundown.localhost', 'Password123')
 const YT_HOSTS = ['youtube.com', 'www.youtube.com', 'm.youtube.com', 'music.youtube.com', 'youtu.be']
 const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.svg': 'image/svg+xml',
   '.png': 'image/png', '.woff2': 'font/woff2', '.mp4': 'video/mp4', '.m4a': 'audio/mp4', '.mp3': 'audio/mpeg', '.wav': 'audio/wav' }
@@ -38,7 +40,7 @@ async function api(req, res, path) {
     const u = director(req)
     return send(res, 200, u ? { email: u.email, code: u.code } : { setup: userCount() === 0 })
   }
-  if (req.method !== 'POST' && path !== '/api/show') return send(res, 405, { error: 'Method not allowed' })
+  if (req.method !== 'POST' && !['/api/show', '/api/item', '/api/library', '/api/vmix'].includes(path)) return send(res, 405, { error: 'Method not allowed' })
   try {
     const { email, password } = path === '/api/signup' || path === '/api/login' ? await body(req) : {}
     if (path === '/api/signup') {
@@ -64,7 +66,19 @@ async function api(req, res, path) {
     const u = director(req)
     if (!u) return send(res, 401, { error: 'Log in first' })
     if (path === '/api/show') return send(res, 200, { show: JSON.parse(loadShow(u.id) ?? 'null') })
+    if (path === '/api/item') return send(res, 200, { show: JSON.parse(loadItem(u.id, new URL(req.url, 'http://x').searchParams.get('id')) ?? 'null') })
+    // shortcut: the whole tree is posted on every change, last write wins; fine for one director per account
+    if (path === '/api/library' && req.method === 'POST') {
+      const { library } = await body(req)
+      if (!Array.isArray(library?.productions)) return send(res, 400, { error: 'Expected { library: { productions: [] } }' })
+      saveLibrary(u.id, JSON.stringify(library))
+      // other director windows reload their tree, so a stale copy doesn't overwrite this one on its next save
+      rooms.get(u.id)?.sockets.forEach(s => s.role === 'director' && s.readyState === 1 && s.send(msg('rundown:library', { from: req.headers['x-window'] })))
+      return send(res, 200, {})
+    }
+    if (path === '/api/library') return send(res, 200, { library: JSON.parse(loadLibrary(u.id) ?? 'null') })
     if (path === '/api/youtube') return youtube(req, res)
+    if (path === '/api/vmix') return vmixTally(req, res)
     send(res, 404, { error: 'Not found' })
   } catch (e) { send(res, 400, { error: e.message }) }
 }
@@ -87,6 +101,21 @@ function youtube(req, res) {
     const [title, file] = out.trim().split('\n')
     send(res, 200, { title, file: '/' + file.replace(/^.*?(media\/)/, '$1') })
   })
+}
+
+// GET /api/vmix?url=http://<vmix>:8088 reads vMix's state for the switcher's tally: vMix sends no CORS headers,
+// so the browser can't. Only the program input's number and title go back, so it can't read other pages through the server
+async function vmixTally(req, res) {
+  let url
+  try { url = new URL('/api/', new URL(new URL(req.url, 'http://x').searchParams.get('url'))) } catch { return send(res, 400, { error: 'Invalid URL' }) }
+  if (!/^https?:$/.test(url.protocol)) return send(res, 400, { error: 'Only http(s) vMix URLs' })
+  let xml
+  try { xml = await (await fetch(url, { signal: AbortSignal.timeout(1000) })).text() } catch { return send(res, 502, { error: 'vMix unreachable' }) }
+  const active = xml.match(/<active>(\d+)<\/active>/)?.[1]
+  const input = active && xml.match(new RegExp(`<input [^>]*number="${active}"[^>]*>`))?.[0]
+  if (!input) return send(res, 502, { error: 'No vMix at that URL' })
+  // shortcut: only &amp; is unescaped in titles; enough for scene names like "CAM 1 & 2"
+  send(res, 200, { number: +active, title: (input.match(/title="([^"]*)"/)?.[1] ?? '').replaceAll('&amp;', '&') })
 }
 
 // files under root, never outside it; null when missing
@@ -137,9 +166,16 @@ server.on('upgrade', (req, socket, head) => {
   })
 })
 
+// like Spotify Connect: one director window is active and drives the rundown and clock; the others mirror it
+// and can take over. Each director window is told whether it is the active one.
+const announce = r => r.sockets.forEach(s => s.role === 'director' && s.readyState === 1 && s.send(msg('rundown:leader', { you: s === r.leader })))
+
+const flush = (ws, userId) => { clearTimeout(ws.saveTimer); if (ws.pending) saveItem(userId, ws.pending); ws.pending = null }
+
 function enter(ws, r, role, userId) {
   ws.role = role
   r.sockets.add(ws)
+  if (role === 'director') { r.leader ??= ws; announce(r) }
   const others = fn => r.sockets.forEach(s => s !== ws && s.readyState === 1 && fn(s))
   ws.on('message', raw => {
     let m
@@ -151,23 +187,32 @@ function enter(ws, r, role, userId) {
     if (role === 'cam') return // listen only
     if (m.event === 'rundown:control') return r.leader?.readyState === 1 && r.leader.send(msg('rundown:control', m.data))
     if (role !== 'director') return
-    r.leader ??= ws
-    if (r.leader !== ws) {
-      // a second director window: its clock reaches only the other directors, so both see the warning, never the cameras
-      if (m.event === 'rundown:clock') others(s => s.role === 'director' && s.send(raw.toString()))
+    if (m.event === 'rundown:takeover') { r.leader = ws; return announce(r) }
+    // a mirroring window working on another performance on its own; the live one is the active window's to save
+    if (m.event === 'rundown:save') {
+      const s = m.data?.show
+      if (r.leader === ws || typeof s?.item !== 'string' || s.item === r.show?.item) return
+      if (ws.pending && ws.pending.item !== s.item) flush(ws, userId) // switched performance: write the last one's pending edits now
+      ws.pending = s
+      clearTimeout(ws.saveTimer)
+      ws.saveTimer = setTimeout(() => flush(ws, userId), 1000)
       return
     }
+    if (r.leader !== ws) return // a mirroring window; it sends transport as rundown:control instead
     if (m.event === 'rundown:show' && m.data?.show) {
+      const save = () => { clearTimeout(r.saveTimer); r.saveTimer = null; saveShow(userId, r.show) }
+      if (r.saveTimer && r.show?.item !== m.data.show.item) save() // switched performance: write the last one's pending edits now
       r.show = m.data.show
       r.showFrom = m.data.id
       clearTimeout(r.saveTimer) // edits arrive per keystroke; write once they settle
-      r.saveTimer = setTimeout(() => saveShow(userId, JSON.stringify(r.show)), 1000)
+      r.saveTimer = setTimeout(save, 1000)
     }
     if (m.event === 'rundown:show' || m.event === 'rundown:clock') others(s => s.send(raw.toString()))
   })
   ws.on('close', () => {
+    flush(ws, userId)
     r.sockets.delete(ws)
-    if (r.leader === ws) r.leader = [...r.sockets].find(s => s.role === 'director') ?? null
+    if (r.leader === ws) { r.leader = [...r.sockets].find(s => s.role === 'director') ?? null; announce(r) }
   })
 }
 

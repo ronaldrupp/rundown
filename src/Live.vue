@@ -50,19 +50,19 @@ const bar = c => ({ left: pct(Math.max(0, c.start - clock.now)), width: pct(c.en
 .list { height: 100%; overflow: hidden; background: var(--bg); border-left: 3px solid var(--red); display: flex; flex-direction: column; }
 .row { display: grid; grid-template-columns: 52px 64px 56px 1fr; align-items: center; height: 36px; flex: none; font-size: 17px; text-transform: uppercase; }
 .no { text-align: right; padding-right: 12px; color: var(--dim); }
-.cam { height: 100%; display: grid; place-items: center; color: #fff; font-weight: 600; font-size: 18px; text-shadow: 0 1px 2px #0006; }
+.cam { height: 100%; display: grid; place-items: center; color: #fff; font-weight: 600; font-size: 18px; }
 .cnt { text-align: right; padding-right: 12px; color: var(--text); font-variant-numeric: tabular-nums; }
 .cnt.red { color: var(--red); font-weight: 700; }
-.txt { position: relative; height: 100%; display: flex; align-items: center; border-left: .5px solid var(--line); overflow: hidden; }
+.txt { position: relative; height: 100%; display: flex; align-items: center; border-left: 1px solid var(--line); overflow: hidden; }
 .txt i { position: absolute; top: 0; bottom: 0; opacity: .75; }
 .txt b { position: relative; font-weight: 400; padding-left: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text); }
 .onair .txt b { color: #fff; font-weight: 600; }
 .onair .txt i { opacity: .9; }
 .rows { flex: 1; min-height: 0; overflow: hidden; }
-.cams { display: flex; overflow-x: auto; flex: none; border-top: .5px solid var(--line); }
-.tile { flex: 0 0 64px; display: flex; flex-direction: column; text-align: center; border-right: .5px solid var(--line); }
+.cams { display: flex; overflow-x: auto; flex: none; border-top: 1px solid var(--line); }
+.tile { flex: 0 0 64px; display: flex; flex-direction: column; text-align: center; border-right: 1px solid var(--line); }
 .tile b { height: 36px; line-height: 36px; font-size: 17px; font-weight: 400; color: var(--dim); font-variant-numeric: tabular-nums; }
-.tile span { height: 36px; display: grid; place-items: center; color: #fff; font-weight: 600; font-size: 18px; text-shadow: 0 1px 2px #0006; }
+.tile span { height: 36px; display: grid; place-items: center; color: #fff; font-weight: 600; font-size: 18px; }
 .tile.onair b { color: var(--red); font-weight: 700; }
 .tile.next b { color: var(--green); font-weight: 700; }
 .tile.done { opacity: .35; }

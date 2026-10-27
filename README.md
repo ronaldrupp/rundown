@@ -64,11 +64,16 @@ Tap a shot to write notes on it, and tap the camera in the header to switch came
   - a draggable divider between the list and the video
 - **Camera operator view**: `/#cam=3&code=<join code>` on a tablet or phone shows the cut flow, this camera's countdown bar (ON AIR / STANDBY / NEXT IN) and its own shots with repositioning time. It has an optional spoken "3, 2, 1" and a sync indicator, and follows the director's window live.
 - **iPhone and iPad app**: a native camera operator view, and a director remote with play, pause and seek ([see below](#iphone-and-ipad-app)).
-- **Switcher output**: sends the planned cuts to **OBS** (WebSocket v5, with password) or **vMix** (HTTP API) while the rundown plays, and optionally the next shot to preview.
+- **Switcher output**: sends the planned cuts to **OBS** (WebSocket v5, with password) or **vMix** (HTTP API) while the rundown plays, and optionally the next shot to preview. It reads the mixer's program back (tally) and warns when it leaves the plan.
+- **Chase timecode**: the show clock follows house **MTC** (Web MIDI) or **LTC** on an audio input instead of the media file ([see below](#chase-timecode)).
+- **Rehearsal take**: with **Rec** on, cuts go into a take beside the plan, from the camera keys or from the vision mixer. Compare the two, then accept the take ([see below](#rehearsal-take)).
+- **Note to cameras**: a note per performance (e.g. "Cam 4 swap to wide lens after this song") shown at the top of every browser camera view.
 - **Caller**: a spoken PA call at each cut ("Five. Next, three.") and a "3, 2, 1" count before longer shots, one voice at a time.
 - **Media**: load a local audio file or a reference video. The video drives the show clock, so picture and UI never drift apart.
 - **YouTube import**: paste a link and the server downloads it with `yt-dlp`.
-- **Rundown files**: every `src/shows/*.json` appears in the **Open…** menu. Your edits autosave to your account on the server, so they follow you between devices.
+- **Productions, rundowns, performances**: after login you pick a production (e.g. a song contest), one of its rundowns (e.g. Semi Final 1), then a performance in its running order. The header shows where you are, and `‹ ›` (or `⌥←` / `⌥→`) switch to the previous or next performance; camera views follow the switch.
+- **Production cameras**: a production has one camera list (number, name, color, operator, position), edited on its screen and shared by all its performances. Renaming or adding a camera in the editor changes it for the whole production. Camera numbers never shift: removing one leaves a gap.
+- **Rundown files**: every `src/shows/*.json` is one of the example performances under **Examples › Songs**. Your edits autosave to your account on the server, so they follow you between devices.
 
 ## Quick start
 
@@ -83,7 +88,7 @@ Open http://localhost:5173. The first visit asks you to create the director acco
 npm run user add jane@example.com
 ```
 
-It prints a random password once. A demo show loads by default. Accounts, logins and each director's rundown live in `data/rundown.db` (SQLite, git-ignored). Needs Node 22.13 or later.
+It prints a random password once. `npm run dev` also keeps a fixed local login for `dev@rundown.localhost` (password `Password123`, see `server/index.js`); `npm start` doesn't. A demo show loads by default. Accounts, logins and each director's rundown live in `data/rundown.db` (SQLite, git-ignored). Needs Node 22.13 or later.
 
 The YouTube import also needs:
 
@@ -98,6 +103,7 @@ brew install yt-dlp ffmpeg
 | `Space` | Play / pause |
 | `1`–`9`, `0` | Cut to camera 1–10 at the playhead |
 | `←` / `→` | Jump one bar |
+| `⌥←` / `⌥→` | Previous / next performance in the rundown |
 | `Home` | Back to start |
 | `⌘Z` / `⇧⌘Z` | Undo / redo |
 | `L` | Toggle LIVE mode |
@@ -158,7 +164,24 @@ Open **⇄ Output** in the toolbar, pick the mixer and map each camera to an OBS
 <sub>OBS 32 in Studio Mode, driven by the "Housewife" rundown: camera 5 on Program, the next shot (camera 3) waiting in Preview, and the transition set to Cut. The scenes are plain color cards named `CAM 1`–`CAM 11`.</sub>
 
 - **OBS**: enable *Tools → WebSocket Server Settings*. Connecting sets the OBS transition to **Cut**, so planned cuts land on the frame. After every cut, the next shot is put back into Preview, because OBS moves the previous Program scene there. The default URL is `ws://localhost:4455`. The password is kept in memory only. "Send next shot to preview" needs Studio Mode.
-- **vMix**: enable *Settings → Web Controller*. The default URL is `http://localhost:8088`. Calls are fire-and-forget (vMix sends no CORS headers), so a wrong input name fails silently in vMix.
+- **vMix**: enable *Settings → Web Controller*. The default URL is `http://localhost:8088`. Calls are fire-and-forget (vMix sends no CORS headers), so a wrong input name fails silently in vMix. For tally, the server reads vMix's state 4 times a second, so the URL must be reachable from the server.
+
+**Tally**: the panel shows which camera the mixer has on program, the camera buttons mark it with a red dot, and the monitor shows **MIXER ON 3 · PLAN 5** when the program differs from the plan for more than half a second. Turn off **Send planned cuts** to only listen, for example to record a vision mixer's rehearsal.
+
+## Chase timecode
+
+Open **Chase** in the toolbar and pick a source:
+
+- **MIDI timecode (MTC)**: from any MIDI input, or one you pick. Needs Chrome, Edge or Firefox (Web MIDI). Quarter frames roll the clock, and a full-frame message locates it.
+- **LTC on an audio input**: plug house LTC into an audio interface input. The browser asks for microphone access, and echo cancelling and gain control are turned off.
+
+While chasing, house timecode runs the show: play, pause and seek do nothing, and the video follows it muted. The song starts at the **LTC** start time in the header. Nothing plays before that or after the song ends, and the clock stops when timecode stops. The button turns red when no frames arrive. Frame rates 24, 25 and 30 are detected. 29.97 drop-frame is read as 30, and reverse play isn't supported.
+
+## Rehearsal take
+
+Press **Rec** in the toolbar. Camera keys and buttons now cut into the **Rehearsal** track under the switcher track instead of changing the plan. With the switcher output on listen only, the vision mixer's cuts are recorded too. Pressing play again records over the take from that point. Shots that differ from the plan are outlined in white.
+
+**Accept** replaces the plan with the take over the stretch that was recorded, keeping the plan's shot notes where the same camera cuts within 2 seconds. ⌘Z undoes it. The take lives in that window only, so a reload drops it.
 
 ## Deep links
 
@@ -168,7 +191,7 @@ Open a rundown at a moment, optionally in LIVE mode:
 http://localhost:5173/#live&show=Tate%20McRae%20%E2%80%93%20Housewife&t=86.2
 ```
 
-`show` is the name shown in the **Open…** menu, and `t` is the time in seconds.
+`show` is the example's name (`<artist> – <title>`, as listed under **Examples › Songs**), and `t` is the time in seconds.
 
 ## Rundown format
 
@@ -213,7 +236,7 @@ ffmpeg -ss 1.0613 -to 172.24 -i media/full.mp4 -c:v libx264 -c:a aac media/house
 - **No scroll state.** Timeline items are positioned with `calc(30% + (start - now) * zoom px)`, so the browser does the layout. Only items inside a time window around the playhead are rendered.
 - **Waveform.** `decodeAudioData` runs once into a peaks array (50 per second). A canvas redraws only the visible pixels each frame.
 - **One `<video>` element** is created once and moved between views, so switching views never re-buffers.
-- **One server.** [`server/index.js`](server/index.js) handles the login API, the sync WebSocket (`/ws`) and the web app. With `npm run dev` it runs Vite as middleware, and with `npm start` it serves `dist/`. Only the first director window of an account publishes, and the server ignores clock and rundown messages from any other.
+- **One server.** [`server/index.js`](server/index.js) handles the login API, the sync WebSocket (`/ws`) and the web app. With `npm run dev` it runs Vite as middleware, and with `npm start` it serves `dist/`. One director window per account is active, like Spotify Connect: it publishes the rundown and clock, and the server ignores both from any other. The other windows mirror it, send play, pause, seek and performance switches to it, and can **Take over**. When the active window closes, another one takes its place.
 - **Auth.** Passwords are hashed with scrypt. Sessions are random tokens, and the database stores only their SHA-256. The login cookie is `HttpOnly` and `SameSite=Lax`, and API writes require JSON, so a form on another site can't use the cookie. The WebSocket accepts the cookie only from the app's own origin.
 - **YouTube import.** The server runs `yt-dlp` with an argument array (no shell), for logged-in directors only, and accepts only https YouTube URLs.
 
@@ -223,6 +246,7 @@ ffmpeg -ss 1.0613 -to 172.24 -i media/full.mp4 -c:v libx264 -c:a aac media/house
 - A join code never changes. Anyone who once had it can keep watching that director's shot list and clock (read-only).
 - Directors can't reset their own password. Delete the user from `data/rundown.db` and add them again.
 - The iOS director remote keeps its login token in UserDefaults, not the Keychain.
+- The iOS app doesn't show the note to cameras yet.
 - Downloaded videos are copyrighted by their owners and are excluded from the repo (`media/` is git-ignored). Respect YouTube's Terms of Service and only download content you have the rights to use.
 
 ## License
