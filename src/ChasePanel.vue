@@ -8,12 +8,17 @@ defineEmits(['close'])
 <template>
   <div class="panel" role="dialog" aria-label="Chase timecode">
     <div class="row head"><b>Chase timecode</b><button @click="$emit('close')" aria-label="Close"><X /></button></div>
+    <template v-if="clock.server">
+      <div class="row"><span>Server</span><span>{{ clock.server.toUpperCase() }} · {{ clock.alone ? 'not followed by this window' : 'drives this window' }}</span></div>
+      <p class="hint">{{ clock.alone ? 'This window works on a performance of its own, so it keeps its own transport.' : 'The show machine reads house timecode; the browser source below is only a fallback.' }}</p>
+    </template>
     <label class="row">Source
       <select v-model="chase.src" @change="chase.input = ''; connect()">
         <option value="off">Off (media is the clock)</option><option value="mtc">MIDI timecode (MTC)</option><option value="ltc">LTC on an audio input</option>
       </select>
     </label>
-    <template v-if="chase.src !== 'off'">
+    <div v-if="clock.server && !clock.alone" class="row"><span class="status" :class="{ ok: clock.locked }">{{ clock.locked ? `locked · ${chase.fps} fps` : 'no frames from the server' }}</span><b class="tc">{{ clock.locked ? chase.tc : '--:--:--:--' }}</b></div>
+    <template v-else-if="chase.src !== 'off'">
       <label class="row">Input
         <select v-model="chase.input" @change="connect">
           <option value="">{{ chase.src === 'mtc' ? 'All MIDI inputs' : 'Default input' }}</option>

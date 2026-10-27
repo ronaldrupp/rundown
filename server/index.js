@@ -3,6 +3,7 @@ import { spawn } from 'node:child_process'
 import { createReadStream, existsSync, mkdirSync, statSync } from 'node:fs'
 import { extname, join, normalize } from 'node:path'
 import { WebSocketServer } from 'ws'
+import { startChase } from './chase.js'
 import { userCount, addUser, setUser, checkPassword, newSession, endSession, sessionUser, userByCode, loadShow, saveShow, saveItem, loadItem, loadLibrary, saveLibrary } from './db.js'
 
 // One process for the whole app: login API, YouTube import, the sync websocket, and the web app itself
@@ -148,6 +149,16 @@ const rooms = new Map() // user id -> { sockets: Set, leader, show, showFrom, sa
 const room = id => rooms.get(id) ?? rooms.set(id, { sockets: new Set(), leader: null, show: JSON.parse(loadShow(id) ?? 'null'), showFrom: null }).get(id)
 const msg = (event, data) => JSON.stringify({ event, data })
 
+// house timecode read here (CHASE=ltc|mtc, server/chase.js). One house clock per show machine,
+// so every window and camera view of every account gets it, and their clocks follow it instead of the director's
+const CHASE = process.env.CHASE
+let tc = CHASE && { src: CHASE }
+if (CHASE) startChase(CHASE, process.env.CHASE_INPUT, f => {
+  tc = { src: CHASE, ...f }
+  const m = msg('rundown:tc', tc)
+  for (const r of rooms.values()) for (const s of r.sockets) if (s.readyState === 1) s.send(m)
+})
+
 const wss = new WebSocketServer({ noServer: true, maxPayload: MAX_BODY })
 server.on('upgrade', (req, socket, head) => {
   const url = new URL(req.url, 'http://x')
@@ -175,6 +186,7 @@ const flush = (ws, userId) => { clearTimeout(ws.saveTimer); if (ws.pending) save
 function enter(ws, r, role, userId) {
   ws.role = role
   r.sockets.add(ws)
+  if (tc) ws.send(msg('rundown:tc', tc)) // the server chases: this window follows it from now on
   if (role === 'director') { r.leader ??= ws; announce(r) }
   const others = fn => r.sockets.forEach(s => s !== ws && s.readyState === 1 && fn(s))
   ws.on('message', raw => {

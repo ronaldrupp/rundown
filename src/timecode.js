@@ -55,3 +55,6 @@ export function mtcParser(onFrame) {
 }
 
 export const seconds = ({ h, m, s, f, fps }) => h * 3600 + m * 60 + s + f / fps
+// what the clock needs from a frame, the same from the browser's and the server's chase
+const p = n => String(n).padStart(2, '0')
+export const frame = fr => ({ t: seconds(fr), running: fr.running, fps: fr.fps, tc: `${p(fr.h)}:${p(fr.m)}:${p(fr.s)}:${p(fr.f % fr.fps)}` })

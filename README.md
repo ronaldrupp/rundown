@@ -65,7 +65,7 @@ Tap a shot to write notes on it, and tap the camera in the header to switch came
 - **Camera operator view**: `/#cam=3&code=<join code>` on a tablet or phone shows the cut flow, this camera's countdown bar (ON AIR / STANDBY / NEXT IN) and its own shots with repositioning time. It has an optional spoken "3, 2, 1" and a sync indicator, and follows the director's window live.
 - **iPhone and iPad app**: a native camera operator view, and a director remote with play, pause and seek ([see below](#iphone-and-ipad-app)).
 - **Switcher output**: sends the planned cuts to **OBS** (WebSocket v5, with password) or **vMix** (HTTP API) while the rundown plays, and optionally the next shot to preview. It reads the mixer's program back (tally) and warns when it leaves the plan.
-- **Chase timecode**: the show clock follows house **MTC** (Web MIDI) or **LTC** on an audio input instead of the media file ([see below](#chase-timecode)).
+- **Chase timecode**: the show clock follows house **LTC** or **MTC**, read by the server on the show machine, or by the director's browser as a fallback ([see below](#chase-timecode)).
 - **Rehearsal take**: with **Rec** on, cuts go into a take beside the plan, from the camera keys or from the vision mixer. Compare the two, then accept the take ([see below](#rehearsal-take)).
 - **Note to cameras**: a note per performance (e.g. "Cam 4 swap to wide lens after this song") shown at the top of every browser camera view.
 - **Caller**: a spoken PA call at each cut ("Five. Next, three.") and a "3, 2, 1" count before longer shots, one voice at a time.
@@ -170,12 +170,27 @@ Open **⇄ Output** in the toolbar, pick the mixer and map each camera to an OBS
 
 ## Chase timecode
 
-Open **Chase** in the toolbar and pick a source:
+### On the server (recommended for a show)
+
+Run the server on the show machine with the house timecode plugged into it:
+
+```bash
+CHASE=ltc npm start
+```
+
+- `CHASE=ltc` reads LTC from an audio input through `ffmpeg` (installed for YouTube import anyway). By default it uses the first input: `-f avfoundation -i :0` on a Mac, `-f alsa -i default` on Linux. `CHASE_INPUT` replaces those ffmpeg input arguments, for example `CHASE_INPUT="-f avfoundation -i :2"`. `ffmpeg -f avfoundation -list_devices true -i ""` lists the Mac's inputs.
+- `CHASE=mtc` reads MIDI timecode from a MIDI input through the optional `@julusian/midi` package. `CHASE_INPUT` picks the first port whose name contains it, for example `CHASE_INPUT="IAC"`. Without it, the server opens the first port.
+
+The server sends every frame, stamped with its own clock, to every director window and camera view. They all run their clock from it directly, so no browser tab has to stay in front and a takeover doesn't interrupt it. There is one house clock per show machine, so every account on the server follows it. A director window working on a performance of its own (not the live one) keeps its own transport, so you can still scrub while editing during a show. The **Chase** button reads **SERVER LTC** or **SERVER MTC** while the server chases.
+
+### In the browser (fallback)
+
+When the server doesn't chase, for example when it's hosted in the cloud, the active director window can read the timecode itself. Open **Chase** in the toolbar and pick a source:
 
 - **MIDI timecode (MTC)**: from any MIDI input, or one you pick. Needs Chrome, Edge or Firefox (Web MIDI). Quarter frames roll the clock, and a full-frame message locates it.
 - **LTC on an audio input**: plug house LTC into an audio interface input. The browser asks for microphone access, and echo cancelling and gain control are turned off.
 
-While chasing, house timecode runs the show: play, pause and seek do nothing, and the video follows it muted. The song starts at the **LTC** start time in the header. Nothing plays before that or after the song ends, and the clock stops when timecode stops. The button turns red when no frames arrive. Frame rates 24, 25 and 30 are detected. 29.97 drop-frame is read as 30, and reverse play isn't supported.
+Either way, while chasing, house timecode runs the show: play, pause and seek do nothing, and the video follows it muted. The song starts at the **LTC** start time in the header. Nothing plays before that or after the song ends, and the clock stops when timecode stops. The button turns red when no frames arrive. Frame rates 24, 25 and 30 are detected. 29.97 drop-frame is read as 30, and reverse play isn't supported.
 
 ## Rehearsal take
 

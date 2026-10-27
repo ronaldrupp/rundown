@@ -30,8 +30,11 @@ watch(show, v => { try { localStorage.setItem('rundown', JSON.stringify(v)) } ca
 
 // following: this director window mirrors the active one (sync.js), so its own media stays paused;
 // a window that isn't the active one and isn't following works on a performance of its own
-// chasing: house timecode drives the clock (chase.js); locked: its frames are arriving
-export const clock = reactive({ now: 0, playing: false, audioName: '', peaks: null, hasVideo: false, loading: '', following: false, chasing: false, locked: false })
+// chasing: this browser reads house timecode (chase.js); server: 'ltc' or 'mtc' when the server reads it (sync.js);
+// alone: a director window working on a performance of its own, which keeps its own transport; locked: frames are arriving
+export const clock = reactive({ now: 0, playing: false, audioName: '', peaks: null, hasVideo: false, loading: '', following: false, chasing: false, server: '', alone: false, locked: false })
+// house timecode drives this window's clock: the server's in every window but a lone one, the browser's only in the active one
+export const chased = () => (!!clock.server && !clock.alone) || (clock.chasing && !clock.following)
 // the last house timecode frame (chase.js): its time in seconds incl. the LTC start, when it came (performance.now), rolling or a locate
 export const ext = { t: 0, at: -1e9, running: false }
 // set by sync.js: while following, transport is sent to the active window instead
@@ -44,12 +47,15 @@ export const audio = document.createElement('video')
 audio.playsInline = true
 // pauses the browser makes on its own (e.g. unmuting a window that was promoted without a click) stop the clock too,
 // so the active window never reports playing while its media stands still
-audio.addEventListener('pause', () => { if (!clock.following && !clock.chasing) clock.playing = false })
+audio.addEventListener('pause', () => { if (!clock.following && !chased()) clock.playing = false })
 let last = performance.now()
 function update() {
   const ts = performance.now()
-  if (clock.chasing && !clock.following) chaseClock(ts)
-  else if (clock.playing) clock.now = audio.src && !clock.following ? audio.currentTime : Math.min(clock.now + (ts - last) / 1000, show.duration)
+  if (chased()) chaseClock(ts)
+  else {
+    clock.locked = false
+    if (clock.playing) clock.now = audio.src && !clock.following ? audio.currentTime : Math.min(clock.now + (ts - last) / 1000, show.duration)
+  }
   if (clock.now >= show.duration) clock.playing = false
   last = ts
   mirrorVideo()
@@ -64,7 +70,7 @@ function chaseClock(ts) {
 }
 // a mirroring or chasing window plays its video muted (the house has the sound), kept near the clock, so its monitor isn't a frozen frame
 function mirrorVideo() {
-  const slave = clock.following || clock.chasing
+  const slave = clock.following || chased()
   audio.muted = slave
   if (!slave || !audio.src) return
   if (clock.playing === audio.paused) clock.playing ? audio.play().catch(() => {}) : audio.pause()
@@ -77,10 +83,10 @@ requestAnimationFrame(frame)
 setInterval(update, 20)
 
 // while chasing, the house timecode is the transport
-export function play() { if (clock.following) return remote.send({ cmd: 'play' }); if (clock.chasing) return; clock.playing = true; if (audio.src) audio.play().catch(() => (clock.playing = false)) } // e.g. blocked without a user click
-export function pause() { if (clock.following) return remote.send({ cmd: 'pause' }); if (clock.chasing) return; clock.playing = false; audio.pause() }
+export function play() { if (clock.following) return remote.send({ cmd: 'play' }); if (chased()) return; clock.playing = true; if (audio.src) audio.play().catch(() => (clock.playing = false)) } // e.g. blocked without a user click
+export function pause() { if (clock.following) return remote.send({ cmd: 'pause' }); if (chased()) return; clock.playing = false; audio.pause() }
 export const toggle = () => (clock.playing ? pause() : play())
-export function seek(t) { if (clock.following) return remote.send({ cmd: 'seek', t }); if (clock.chasing) return; clock.now = Math.max(0, Math.min(t, show.duration)); if (audio.src) audio.currentTime = clock.now }
+export function seek(t) { if (clock.following) return remote.send({ cmd: 'seek', t }); if (chased()) return; clock.now = Math.max(0, Math.min(t, show.duration)); if (audio.src) audio.currentTime = clock.now }
 
 let loadId = 0
 export async function loadAudio(file, name = file.name) {
