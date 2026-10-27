@@ -55,6 +55,8 @@ export function mtcParser(onFrame) {
 }
 
 export const seconds = ({ h, m, s, f, fps }) => h * 3600 + m * 60 + s + f / fps
+// seconds from a start time to timecode t, within ±12 h, so 23:59:55:00 is 5 s before a start at 00:00:00:00
+export const sinceStart = (t, start) => ((((t - start) % 86400) + 86400 + 43200) % 86400) - 43200
 // what the clock needs from a frame, the same from the browser's and the server's chase
 const p = n => String(n).padStart(2, '0')
 export const frame = fr => ({ t: seconds(fr), running: fr.running, fps: fr.fps, tc: `${p(fr.h)}:${p(fr.m)}:${p(fr.s)}:${p(fr.f % fr.fps)}` })

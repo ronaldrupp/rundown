@@ -31,8 +31,9 @@ watch(show, v => { try { localStorage.setItem('rundown', JSON.stringify(v)) } ca
 // following: this director window mirrors the active one (sync.js), so its own media stays paused;
 // a window that isn't the active one and isn't following works on a performance of its own
 // chasing: this browser reads house timecode (chase.js); server: 'ltc' or 'mtc' when the server reads it (sync.js);
-// alone: a director window working on a performance of its own, which keeps its own transport; locked: frames are arriving
-export const clock = reactive({ now: 0, playing: false, audioName: '', peaks: null, hasVideo: false, loading: '', following: false, chasing: false, server: '', alone: false, locked: false })
+// alone: a director window working on a performance of its own, which keeps its own transport; locked: frames are arriving;
+// sound: this window plays the video's audio while chasing or following, for rehearsing without a house PA
+export const clock = reactive({ now: 0, playing: false, audioName: '', peaks: null, hasVideo: false, loading: '', following: false, chasing: false, server: '', alone: false, locked: false, sound: false })
 // house timecode drives this window's clock: the server's in every window but a lone one, the browser's only in the active one
 export const chased = () => (!!clock.server && !clock.alone) || (clock.chasing && !clock.following)
 // the last house timecode frame (chase.js): its time in seconds incl. the LTC start, when it came (performance.now), rolling or a locate
@@ -68,10 +69,10 @@ function chaseClock(ts) {
   clock.playing = ext.running && age < 0.2 && t >= 0 && t < show.duration
   clock.now = Math.max(0, Math.min(t, show.duration))
 }
-// a mirroring or chasing window plays its video muted (the house has the sound), kept near the clock, so its monitor isn't a frozen frame
+// a mirroring or chasing window plays its video muted (the house has the sound, unless sound is on), kept near the clock, so its monitor isn't a frozen frame
 function mirrorVideo() {
   const slave = clock.following || chased()
-  audio.muted = slave
+  audio.muted = slave && !clock.sound
   if (!slave || !audio.src) return
   if (clock.playing === audio.paused) clock.playing ? audio.play().catch(() => {}) : audio.pause()
   if (Math.abs(audio.currentTime - clock.now) > 0.3) audio.currentTime = clock.now
