@@ -101,27 +101,29 @@ onUnmounted(() => removeEventListener('keydown', onKey))
   </aside>
   <div class="pane">
   <header>
-    <button v-if="!side" class="icon" @click="side = true" aria-label="Open sidebar" title="Open sidebar"><PanelLeftOpen /></button>
-    <nav class="prod" aria-label="Open performance">
-      <div>
-        <button class="crumb" @click="browse([])">Productions</button>
-        <template v-if="here"><ChevronRight class="sep" /> <button class="crumb" @click="browse([here.p.id])">{{ here.p.name }}</button>
-          <ChevronRight class="sep" /> <button class="crumb" @click="browse([here.p.id, here.r.id])">{{ here.r.name }}</button></template>
-      </div>
-      <div v-if="here" class="step">
-        <button @click="step(-1)" :disabled="!here.i" aria-label="Previous performance" title="Previous performance (⌥←)"><ChevronLeft /></button>
-        <button class="ep" @click="browsing = false" title="Open the editor">{{ here.i + 1 }}/{{ here.r.items.length }} · {{ here.r.items[here.i].name }}</button>
-        <button @click="step(1)" :disabled="here.i === here.r.items.length - 1" aria-label="Next performance" title="Next performance (⌥→)"><ChevronRight /></button>
-      </div>
-    </nav>
-    <div class="song">
-      <input class="no" type="number" v-model.number="show.songNo" aria-label="Song number" />
-      <div><input class="artist" v-model="show.artist" aria-label="Artist" /><input v-model="show.title" aria-label="Title" /></div>
+    <div class="left">
+      <button v-if="!side" class="icon" @click="side = true" aria-label="Open sidebar" title="Open sidebar"><PanelLeftOpen /></button>
+      <nav class="prod" aria-label="Open performance">
+        <div>
+          <button class="crumb" @click="browse(here ? [here.p.id] : [])">{{ here?.p.name ?? 'Productions' }}</button>
+          <template v-if="here"><span class="sep">–</span><button class="crumb" @click="browse([here.p.id, here.r.id])">{{ here.r.name }}</button></template>
+          <span class="badge fps">{{ FPS }}</span>
+        </div>
+        <button v-if="here" class="ep" @click="browsing = false" title="Open the editor">{{ here.i + 1 }}/{{ here.r.items.length }} · {{ here.r.items[here.i].name }}</button>
+      </nav>
     </div>
-    <div class="ltc">
-      <span class="badge out">LTC</span>
-      <div><input class="mono" :value="tc(show.tcOffset)" @change="show.tcOffset = parseTc($event.target.value) ?? show.tcOffset" aria-label="Start timecode" />
-        <small>{{ Math.floor(show.duration / 60) }}:{{ String(Math.floor(show.duration % 60)).padStart(2, '0') }}</small></div>
+    <div class="center">
+      <button v-if="here" class="icon" @click="step(-1)" :disabled="!here.i" aria-label="Previous performance" title="Previous performance (⌥←)"><ChevronLeft /></button>
+      <div class="song">
+        <input class="no" type="number" v-model.number="show.songNo" aria-label="Song number" />
+        <div><input class="artist" v-model="show.artist" aria-label="Artist" /><input class="title" v-model="show.title" aria-label="Title" /></div>
+      </div>
+      <div class="ltc">
+        <span class="badge out">LTC</span>
+        <div><input class="mono" :value="tc(show.tcOffset)" @change="show.tcOffset = parseTc($event.target.value) ?? show.tcOffset" aria-label="Start timecode" />
+          <small>{{ Math.floor(show.duration / 60) }}:{{ String(Math.floor(show.duration % 60)).padStart(2, '0') }}</small></div>
+      </div>
+      <button v-if="here" class="icon" @click="step(1)" :disabled="here.i === here.r.items.length - 1" aria-label="Next performance" title="Next performance (⌥→)"><ChevronRight /></button>
     </div>
     <button class="live" :class="{ on: view === 'live' && !browsing }" @click="view = view === 'live' && !browsing ? 'rundown' : 'live'; browsing = false">LIVE</button>
   </header>
@@ -185,23 +187,30 @@ header input:focus { background: var(--fill); }
 .em { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .me small { color: var(--faint); }
 button.icon { background: none; color: var(--dim); padding: 4px 8px; }
-.prod { flex: 1; font-size: 13px; }
-.prod div { display: flex; gap: 4px; align-items: center; color: var(--faint); }
-.prod .crumb { background: none; box-shadow: none; padding: 1px 4px; color: var(--dim); white-space: nowrap; }
-.prod .step button { padding: 2px 10px; }
-.prod .step button:disabled { opacity: .3; }
-.ep { font-weight: 600; color: var(--text); white-space: nowrap; }
+/* top bar: production info left, ‹ song · LTC › centered, LIVE right */
+header { display: grid; grid-template-columns: 1fr auto 1fr; gap: 16px; padding: 6px 12px; }
+header .left { display: flex; align-items: center; gap: 4px; min-width: 0; }
+header .center { display: flex; align-items: center; gap: 12px; }
+header .center .icon:disabled { opacity: .3; }
+.prod { min-width: 0; font-size: 12px; display: flex; flex-direction: column; align-items: flex-start; }
+.prod div { display: flex; gap: 2px; align-items: center; min-width: 0; max-width: 100%; color: var(--faint); }
+.prod button { background: none; box-shadow: none; padding: 0 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.prod .crumb { font-weight: 600; color: var(--text); }
+.prod .fps { flex: none; margin-left: 6px; font-family: var(--mono); font-size: 11px; padding: 0 5px; background: var(--fill-hi); color: var(--text); }
+.ep { font-weight: 500; color: var(--text); max-width: 100%; }
 .badge { background: var(--primary); color: var(--primary-fg); font-size: 12px; font-weight: 500; padding: 2px 8px; border-radius: var(--r-sm); }
 .badge.out { background: none; box-shadow: var(--rim); color: var(--dim); }
-.song { flex: 1; display: flex; align-items: center; gap: 10px; }
-.song .no { width: 2.2em; height: 36px; text-align: center; font-size: 20px; font-weight: 600; background: var(--fill); box-shadow: inset 0 0 0 1px var(--green); border-radius: var(--r-sm); -moz-appearance: textfield; }
+.song { display: flex; align-items: center; gap: 8px; }
+.song .title { color: var(--dim); }
+.song div input { field-sizing: content; min-width: 4em; max-width: 24em; }
+.song .no { width: 1.8em; height: 32px; text-align: center; font-size: 20px; font-weight: 600; background: var(--fill); box-shadow: inset 0 0 0 1px var(--green); border-radius: var(--r-sm); -moz-appearance: textfield; }
 .song .no::-webkit-inner-spin-button { display: none; }
 .song div { display: flex; flex-direction: column; font-size: 13px; }
 .song .artist { font-weight: 700; text-transform: uppercase; }
 .ltc { display: flex; align-items: center; gap: 10px; }
 .ltc div { display: flex; flex-direction: column; align-items: center; font-size: 13px; color: var(--dim); }
 .ltc input { width: 7em; text-align: center; color: var(--dim); }
-button.live { margin-left: auto; padding: 6px 16px; font-weight: 600; letter-spacing: .04em; }
+button.live { justify-self: end; padding: 6px 16px; font-weight: 600; letter-spacing: .04em; }
 button.live.on { background: var(--red); color: #fff; }
 main { flex: 1; min-height: 0; overflow: auto; }
 footer { padding: 6px 16px; color: var(--dim); font-size: 12px; background: var(--bg2); border-top: 1px solid var(--line); }
