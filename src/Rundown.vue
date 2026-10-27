@@ -8,7 +8,7 @@ import ChasePanel from './ChasePanel.vue'
 import { chase } from './chase'
 import { rec, take, cutTo, accept, discard } from './rehearsal'
 import { ref, computed, watch, watchEffect, onMounted, onUnmounted } from 'vue'
-import { FPS, show, clock, cues, liveIdx, camOf, stc, parseStc, bb, parseBb, dur, tc, seek, toggle, addCue, removeCue, addCam, addItem, snapBeat, spb, secs, loadAudio, loadYoutube, audio, ink, swatch } from './store'
+import { chased, FPS, show, clock, cues, liveIdx, camOf, stc, parseStc, bb, parseBb, dur, tc, seek, toggle, addCue, removeCue, addCam, addItem, snapBeat, spb, secs, loadAudio, loadYoutube, audio, ink, swatch } from './store'
 
 defineProps({ liveMode: Boolean }) // not `live`: that name is the on-air shot below
 
@@ -236,7 +236,7 @@ watchEffect(() => {
       <button class="caller" :class="{ on: caller.on }" @click="caller.on = !caller.on" :aria-pressed="caller.on" title="Spoken camera calls and countdown"><Volume2 v-if="caller.on" /><VolumeX v-else /> Caller</button>
       <button class="caller" :class="{ rec: rec.on }" @click="rec.on = !rec.on" :aria-pressed="rec.on" title="Record a rehearsal take: camera keys (and the mixer's cuts, when the output only listens) go into a take beside the plan"><CircleDot /> Rec</button>
       <button class="caller" :class="{ on: sw.kind !== 'off' }" @click="open('sw')" :aria-expanded="panel === 'sw'" title="Send cuts to OBS or vMix"><ArrowLeftRight /> Output{{ sw.kind !== 'off' ? ` · ${sw.kind.toUpperCase()}` : '' }}</button>
-      <button class="caller" :class="{ on: clock.locked, bad: clock.chasing && !clock.locked }" @click="open('tc')" :aria-expanded="panel === 'tc'" title="Chase house timecode (MTC or LTC)"><Clock /> Chase{{ clock.chasing ? ` · ${chase.src.toUpperCase()}` : '' }}</button>
+      <button class="caller" :class="{ on: clock.locked, bad: chased() && !clock.locked }" @click="open('tc')" :aria-expanded="panel === 'tc'" title="Chase house timecode (MTC or LTC)"><Clock /> Chase{{ clock.server && !clock.alone ? ` · SERVER ${clock.server.toUpperCase()}` : clock.chasing ? ` · ${chase.src.toUpperCase()}` : '' }}</button>
       <label title="Snap cuts to the beat"><input type="checkbox" v-model="show.snap" />Snap</label>
       <label v-if="!clock.audioName" title="Song length in seconds"><Timer /><input type="number" min="1" v-model.number="show.duration" /></label>
       <label title="Zoom"><ZoomIn /><input type="range" min="10" max="300" v-model.number="show.zoom" /></label>

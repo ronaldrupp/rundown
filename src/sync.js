@@ -1,5 +1,6 @@
-import { reactive, watch } from 'vue'
-import { show, clock, live, audio, remote, play, pause, seek, loadMedia, openShow } from './store'
+import { reactive, watch, watchEffect } from 'vue'
+import { show, clock, live, audio, remote, play, pause, seek, loadMedia, openShow, chased } from './store'
+import { heard } from './chase'
 import { openItem, reloadLibrary, mirror, windowId } from './library'
 
 // Sync over server/index.js: the logged-in director window publishes the rundown and clock,
@@ -32,6 +33,12 @@ function connect(query) {
     if (rtt < best) { best = rtt; offset = p.s + rtt / 2 - Date.now() }
   })
   const send = (event, data) => ws.readyState === 1 && ws.send(JSON.stringify({ event, data }))
+  // house timecode read by the server: it says so right after connecting, then sends every frame
+  on('open', () => (clock.server = ''))
+  on('rundown:tc', m => {
+    clock.server = m.src
+    if (m.at) heard(m, performance.now() - (serverNow() - m.at))
+  })
   setInterval(() => send('ping', { t: Date.now() }), 2000)
   on('open', () => send('ping', { t: Date.now() }))
   open()
@@ -53,6 +60,7 @@ function followClock(c, to = clock, duration = show.duration) {
 export function publish() {
   hot = connect('')
   remote.send = m => hot.send('rundown:control', m)
+  watchEffect(() => (clock.alone = link.active === false && !clock.following))
   const sendShow = () => link.active && hot.send('rundown:show', { id: me, show: plain(show) })
   watch(show, () => (link.active ? sendShow() : link.active === false && !clock.following && hot.send('rundown:save', { show: plain(show) })), { deep: true })
   hot.on('open', () => hot.send('rundown:hello')) // the live rundown for the player bar, before anything changes
@@ -82,7 +90,7 @@ export function publish() {
   hot.on('rundown:clock', c => {
     if (link.active) return
     followClock(c, live, live.show?.duration ?? show.duration)
-    if (clock.following) followClock(c)
+    if (clock.following && !clock.server) followClock(c)
   })
   hot.on('rundown:library', m => m?.from !== windowId && reloadLibrary())
   // transport from a mirroring window or a remote (the iPad app's director mode); the server only relays it from logged-in ones
@@ -94,7 +102,7 @@ export function publish() {
   })
   // read the media clock directly: rAF (and so clock.now) stops while this window is in the background
   // at: when `now` was read, in server time, so followers can add the network delay
-  setInterval(() => link.active && hot.send('rundown:clock', { id: me, now: audio.src && !clock.chasing ? audio.currentTime : clock.now, playing: clock.playing, at: serverNow() }), 100)
+  setInterval(() => link.active && hot.send('rundown:clock', { id: me, now: audio.src && !chased() ? audio.currentTime : clock.now, playing: clock.playing, at: serverNow() }), 100)
 }
 
 // load this window's copy of the video first, so playback moves over without a gap
@@ -121,7 +129,7 @@ export function follow(code) {
     }
     link.last = t
     leaderPlaying = c.playing
-    followClock(c)
+    if (!clock.server) followClock(c)
   })
   hot.on('open', () => hot.send('rundown:hello'))
 }
