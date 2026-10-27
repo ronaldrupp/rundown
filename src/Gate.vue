@@ -45,6 +45,6 @@ async function submit() {
 h1 { margin: 0 0 4px; font-size: 20px; }
 p { margin: 0; color: var(--dim); font-size: 13px; }
 input { padding: 9px 12px; }
-button { margin-top: 4px; padding: 9px; font-weight: 600; background: var(--blue); color: #fff; }
+button { margin-top: 4px; padding: 9px; font-weight: 500; background: var(--primary); color: var(--primary-fg); }
 .error { color: var(--red); }
 </style>

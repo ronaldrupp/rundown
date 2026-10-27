@@ -10,7 +10,7 @@ const CAM_NAMES = ['CU LEFT', 'CU CENTER LOW', 'CU RIGHT', 'CU CENTER HIGH', 'CU
   'STEADI A', 'STEADI B', 'CRANE LEFT', 'CRANE RIGHT', 'LINE CAM', 'HANDHELD']
 
 const demo = {
-  production: 'Live Show 2026', episode: 'FINALE', songNo: 10, title: 'Demo Song', artist: 'Demo Artist',
+  production: 'Live Show 2026', episode: 'FINALE', songNo: 10, title: 'Demo Song', artist: 'Demo Artist', brief: '',
   media: null, bpm: 120, beatsPerBar: 4, snap: true, duration: 180, tcOffset: 7 * 3600 + 40 * 60, zoom: 80,
   cams: CAM_NAMES.map((name, i) => ({ id: i + 1, name, color: COLORS[i % COLORS.length] })),
   cues: [[0, 7, 'TOWER WIDE OPENING'], [8, 6, 'FS > ZO GENTLY'], [16, 4, 'CENTER MS > PAN LEFT'], [20, 1, 'ECU ZOOM OUT + FLY UP ON TEMPO'],
@@ -28,17 +28,47 @@ saved?.cams?.forEach(c => (c.color = OLD[c.color] ?? c.color))
 export const show = reactive({ ...structuredClone(demo), ...saved }) // spread keeps older saves loadable
 watch(show, v => { try { localStorage.setItem('rundown', JSON.stringify(v)) } catch {} }, { deep: true })
 
-export const clock = reactive({ now: 0, playing: false, audioName: '', peaks: null, hasVideo: false, loading: '' })
+// following: this director window mirrors the active one (sync.js), so its own media stays paused;
+// a window that isn't the active one and isn't following works on a performance of its own
+// chasing: house timecode drives the clock (chase.js); locked: its frames are arriving
+export const clock = reactive({ now: 0, playing: false, audioName: '', peaks: null, hasVideo: false, loading: '', following: false, chasing: false, locked: false })
+// the last house timecode frame (chase.js): its time in seconds incl. the LTC start, when it came (performance.now), rolling or a locate
+export const ext = { t: 0, at: -1e9, running: false }
+// set by sync.js: while following, transport is sent to the active window instead
+export const remote = { send: null }
+// what the active window is playing, for the player bar of the other director windows (set by sync.js)
+export const live = reactive({ show: null, now: 0, playing: false })
 
 // one media element for music files and downloaded videos; the monitor mounts it
 export const audio = document.createElement('video')
 audio.playsInline = true
+// pauses the browser makes on its own (e.g. unmuting a window that was promoted without a click) stop the clock too,
+// so the active window never reports playing while its media stands still
+audio.addEventListener('pause', () => { if (!clock.following && !clock.chasing) clock.playing = false })
 let last = performance.now()
 function update() {
   const ts = performance.now()
-  if (clock.playing) clock.now = audio.src ? audio.currentTime : Math.min(clock.now + (ts - last) / 1000, show.duration)
+  if (clock.chasing && !clock.following) chaseClock(ts)
+  else if (clock.playing) clock.now = audio.src && !clock.following ? audio.currentTime : Math.min(clock.now + (ts - last) / 1000, show.duration)
   if (clock.now >= show.duration) clock.playing = false
   last = ts
+  mirrorVideo()
+}
+// house timecode, carried forward between frames; frames stopping means the house stopped.
+// Before the song's start time or past its end nothing plays, so no cuts go out
+function chaseClock(ts) {
+  const age = (ts - ext.at) / 1000, t = ext.t - show.tcOffset + (ext.running ? Math.min(age, 0.2) : 0)
+  clock.locked = age < 0.5
+  clock.playing = ext.running && age < 0.2 && t >= 0 && t < show.duration
+  clock.now = Math.max(0, Math.min(t, show.duration))
+}
+// a mirroring or chasing window plays its video muted (the house has the sound), kept near the clock, so its monitor isn't a frozen frame
+function mirrorVideo() {
+  const slave = clock.following || clock.chasing
+  audio.muted = slave
+  if (!slave || !audio.src) return
+  if (clock.playing === audio.paused) clock.playing ? audio.play().catch(() => {}) : audio.pause()
+  if (Math.abs(audio.currentTime - clock.now) > 0.3) audio.currentTime = clock.now
 }
 // rAF keeps the display smooth; the timer keeps cuts (switcher, caller, sync) going when the window is
 // covered or in the background, where browsers stop rAF but keep timers running for pages playing audio
@@ -46,10 +76,11 @@ const frame = () => { update(); requestAnimationFrame(frame) }
 requestAnimationFrame(frame)
 setInterval(update, 20)
 
-export function play() { clock.playing = true; if (audio.src) audio.play().catch(() => (clock.playing = false)) } // e.g. blocked without a user click
-export function pause() { clock.playing = false; audio.pause() }
+// while chasing, the house timecode is the transport
+export function play() { if (clock.following) return remote.send({ cmd: 'play' }); if (clock.chasing) return; clock.playing = true; if (audio.src) audio.play().catch(() => (clock.playing = false)) } // e.g. blocked without a user click
+export function pause() { if (clock.following) return remote.send({ cmd: 'pause' }); if (clock.chasing) return; clock.playing = false; audio.pause() }
 export const toggle = () => (clock.playing ? pause() : play())
-export function seek(t) { clock.now = Math.max(0, Math.min(t, show.duration)); if (audio.src) audio.currentTime = clock.now }
+export function seek(t) { if (clock.following) return remote.send({ cmd: 'seek', t }); if (clock.chasing) return; clock.now = Math.max(0, Math.min(t, show.duration)); if (audio.src) audio.currentTime = clock.now }
 
 let loadId = 0
 export async function loadAudio(file, name = file.name) {
@@ -66,6 +97,7 @@ export async function loadAudio(file, name = file.name) {
     for (let j = i * step; j < (i + 1) * step; j += 16) m = Math.max(m, Math.abs(data[j]))
     return m
   })
+  if (clock.following) return // the clock comes from the active window
   seek(0)
   if (clock.playing) audio.play().catch(() => (clock.playing = false)) // play was pressed while the media was still loading
 }
@@ -136,16 +168,17 @@ export function addCue(start, cam) {
   show.cues.push({ id, start, cam, note: '' })
 }
 export const removeCue = id => show.cues.splice(show.cues.findIndex(c => c.id === id), 1)
-export function addCam() {
-  const id = Math.max(0, ...show.cams.map(c => c.id)) + 1
-  show.cams.push({ id, name: `CAM ${id}`, color: COLORS[(id - 1) % COLORS.length] })
+export function addCam(list = show.cams) {
+  const id = Math.max(0, ...list.map(c => c.id)) + 1
+  list.push({ id, name: `CAM ${id}`, color: COLORS[(id - 1) % COLORS.length] })
 }
 export function addItem(track, start, text) {
   track.items.push({ id: Math.max(0, ...track.items.map(i => i.id)) + 1, start, text })
 }
-// undo/redo: snapshots of the rundown (zoom excluded), recorded once edits settle
+// undo/redo: snapshots of the rundown, recorded once edits settle. Zoom and cameras are left out:
+// the cameras belong to the production (library.js), so undoing a song's edit must not rename them
 const hist = { past: [], future: [], cur: null, skip: false, timer: 0 }
-const snap = () => JSON.stringify({ ...show, zoom: undefined })
+const snap = () => JSON.stringify({ ...show, zoom: undefined, cams: undefined })
 hist.cur = snap()
 watch(show, () => {
   if (hist.skip) return (hist.skip = false)
@@ -160,6 +193,8 @@ watch(show, () => {
 function restore(s) { clearTimeout(hist.timer); hist.skip = true; Object.assign(show, JSON.parse(s)); hist.cur = s }
 export function undo() { if (hist.past.length) { hist.future.push(hist.cur); restore(hist.past.pop()) } }
 export function redo() { if (hist.future.length) { hist.past.push(hist.cur); restore(hist.future.pop()) } }
+// after switching performance, undo must not bring back the previous one
+export function clearHistory() { clearTimeout(hist.timer); hist.past = []; hist.future = []; hist.cur = snap() }
 
 // saved rundowns: every src/shows/*.json plus the demo
 const files = import.meta.glob('./shows/*.json', { eager: true, import: 'default' })
@@ -169,11 +204,14 @@ for (const [name, r] of Object.entries(rundowns)) {
   const c = [...r.cues].sort((a, b) => a.start - b.start)
   console.assert(c.every((q, i) => !i || q.cam !== c[i - 1].cam), `${name}: same camera cut back to back`)
 }
-export function loadShow(name) {
+export const loadShow = name => openShow(rundowns[name])
+// replaces the rundown (keys missing from s keep their old value) and loads its media
+export function openShow(s) {
   pause()
   audio.removeAttribute('src'); audio.load()
   Object.assign(clock, { now: 0, audioName: '', peaks: null, hasVideo: false })
-  Object.assign(show, structuredClone(rundowns[name]))
+  // s may hold reactive proxies, which structuredClone rejects; brief is newer than most saves, so it mustn't carry over
+  Object.assign(show, { brief: '' }, JSON.parse(JSON.stringify(s)))
   return loadMedia()
 }
 

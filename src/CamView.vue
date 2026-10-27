@@ -1,4 +1,5 @@
 <script setup>
+import { Volume2, VolumeX, Play, Pause } from 'lucide-vue-next'
 import { ref, computed, watch, onUnmounted } from 'vue'
 import { show, clock, cues, liveIdx, camOf, stc, swatch } from './store'
 import { link } from './sync'
@@ -89,10 +90,12 @@ function drag(e) {
       <span class="link" :class="{ ok: connected }"
         :title="connected ? 'Synced with director' : 'No director signal'">●</span>
       <button class="spk" :aria-pressed="beeps" @click="toggleBeeps"
-        :title="beeps ? 'Countdown pips on' : 'Countdown pips off'">{{ beeps ? '🔊' : '🔈' }}</button>
+        :title="beeps ? 'Countdown pips on' : 'Countdown pips off'"><Volume2 v-if="beeps" /><VolumeX v-else /></button>
       <span class="tally" :class="{ onair: onAir, stby: standby }"
         :aria-label="onAir ? 'On air' : standby ? 'Standby' : 'Off air'">((•))</span>
     </header>
+
+    <p v-if="show.brief" class="brief" role="note">{{ show.brief }}</p>
 
     <section ref="flowEl" class="flow" aria-label="Shot flow" :style="{ flex: split }">
       <TransitionGroup name="rise" tag="div" class="stack">
@@ -130,7 +133,7 @@ function drag(e) {
     </section>
 
     <footer>
-      <span class="play">{{ clock.playing ? '▶' : '❚❚' }}</span>
+      <span class="play"><Play v-if="clock.playing" /><Pause v-else /></span>
       <span class="time">{{ elapsed(clock.now) }}</span>
       <span class="prog"><i :style="{ width: (clock.now / show.duration) * 100 + '%' }"></i></span>
       <span class="tc">{{ stc(clock.now) }}</span>
@@ -156,7 +159,7 @@ function drag(e) {
   content: '';
   position: absolute;
   inset: 0;
-  box-shadow: inset 0 0 0 6px var(--t), inset 0 0 28px 10px color-mix(in srgb, var(--t) 70%, transparent);
+  box-shadow: inset 0 0 0 6px var(--t);
   pointer-events: none;
   z-index: 5;
 }
@@ -165,13 +168,25 @@ function drag(e) {
   --t: var(--green);
 }
 
+/* the director's note for this performance, under the header */
+.brief {
+  margin: 0;
+  flex: none;
+  padding: 8px 16px;
+  background: color-mix(in srgb, #ffd60a 18%, var(--bg));
+  border-bottom: 1px solid var(--line);
+  color: #ffd60a;
+  font-weight: 600;
+  white-space: pre-wrap;
+}
+
 header {
   display: flex;
   align-items: center;
   gap: 12px;
   padding: 10px 16px;
-  background: var(--glass); backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur);
-  box-shadow: var(--rim);
+  background: var(--glass);
+  border-bottom: 1px solid var(--line);
   flex: none;
 }
 
@@ -212,7 +227,7 @@ header {
 
 .tally {
   padding: 6px 12px;
-  border-radius: 999px;
+  border-radius: var(--r-sm);
   background: var(--fill);
   color: var(--dim);
   box-shadow: var(--rim);
@@ -500,8 +515,8 @@ footer {
   align-items: center;
   gap: 12px;
   padding: 10px 16px;
-  background: var(--glass); backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur);
-  box-shadow: var(--rim);
+  background: var(--glass);
+  border-top: 1px solid var(--line);
   flex: none;
 }
 
