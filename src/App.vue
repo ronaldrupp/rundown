@@ -4,17 +4,34 @@ import { FPS, show, clock, toggle, seek, tc, parseTc, addCue, snapBeat, spb, run
 import { publish, follow, link as syncLink } from './sync'
 import Rundown from './Rundown.vue'
 import CamView from './CamView.vue'
+import Gate from './Gate.vue'
 
-// deep link: #live&show=<rundown name>&t=<seconds>, or #cam=<n> for a camera operator view
+// deep link: #live&show=<rundown name>&t=<seconds>, or #cam=<n>&code=<join code> for a camera operator view
 const link = new URLSearchParams(location.hash.slice(1))
 const cam = +link.get('cam') || null
+const code = link.get('code')
 const view = ref(link.has('live') ? 'live' : 'rundown')
 addEventListener('hashchange', () => location.reload()) // deep links are read once at startup
-if (cam) follow()
-else {
+
+// director: { email, code } once logged in; gate: which form to show before that
+const director = ref(null), gate = ref('')
+if (cam) code && follow(code)
+else fetch('/api/me').then(r => r.json()).then(u => (u.email ? start(u) : (gate.value = u.setup ? 'setup' : 'login')))
+
+async function start(u) {
+  director.value = u
+  const { show: saved } = await (await fetch('/api/show')).json()
+  if (saved) Object.assign(show, saved) // the account's rundown wins over this browser's copy
   publish()
   if (rundowns[link.get('show')]) loadShow(link.get('show')).then(() => link.has('t') && seek(+link.get('t')))
   else loadMedia().then(() => link.has('t') && seek(+link.get('t')))
+}
+const logout = () => fetch('/api/logout', { method: 'POST' }).then(() => location.reload())
+const copied = ref(false)
+function copyJoin() {
+  navigator.clipboard.writeText(`${location.origin}/#cam=1&code=${director.value.code}`)
+  copied.value = true
+  setTimeout(() => (copied.value = false), 1500)
 }
 
 // warn when another director window publishes too: camera views can only follow one
@@ -39,8 +56,10 @@ onUnmounted(() => removeEventListener('keydown', onKey))
 </script>
 
 <template>
-  <CamView v-if="cam" :cam="cam" />
-  <template v-else>
+  <Gate v-if="cam && (!code || syncLink.denied)" mode="join" :cam="cam" :denied="syncLink.denied" />
+  <CamView v-else-if="cam" :cam="cam" />
+  <Gate v-else-if="!director && gate" :mode="gate" @in="start" />
+  <template v-else-if="director">
   <header>
     <div class="prod">
       <div><input v-model="show.production" aria-label="Production" /><span class="badge">Production</span></div>
@@ -58,7 +77,9 @@ onUnmounted(() => removeEventListener('keydown', onKey))
       <div><input class="mono" :value="tc(show.tcOffset)" @change="show.tcOffset = parseTc($event.target.value) ?? show.tcOffset" aria-label="Start timecode" />
         <small>{{ Math.floor(show.duration / 60) }}:{{ String(Math.floor(show.duration % 60)).padStart(2, '0') }}</small></div>
     </div>
-    <span v-if="otherDirector" class="warn" title="Another director window is open on this dev server. Camera views follow only one director, so close the others.">⚠ Another director is open</span>
+    <span v-if="otherDirector" class="warn" title="Another director window is open on this account. Camera views follow only the first one, so close the others.">⚠ Another director is open</span>
+    <button class="join" @click="copyJoin" title="Copy the camera join link. Camera operators can also enter this code.">{{ copied ? 'Link copied' : `Join ${director.code}` }}</button>
+    <button class="logout" @click="logout" :title="`Logged in as ${director.email}`">Log out</button>
     <button class="live" :class="{ on: view === 'live' }" @click="view = view === 'live' ? 'rundown' : 'live'">LIVE</button>
   </header>
   <main>
@@ -106,8 +127,10 @@ header input:focus { background: var(--fill); }
 .ltc div { display: flex; flex-direction: column; align-items: center; font-size: 13px; color: var(--dim); }
 .ltc input { width: 7em; text-align: center; color: var(--dim); }
 header .warn { margin-left: auto; color: var(--orange); font-size: 12px; font-weight: 600; }
-header .warn + button.live { margin-left: 0; }
-button.live { margin-left: auto; padding: 6px 16px; font-weight: 600; letter-spacing: .04em; }
+header .warn + button.join { margin-left: 0; }
+button.join { margin-left: auto; white-space: nowrap; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: .06em; }
+button.logout { color: var(--dim); white-space: nowrap; }
+button.live { padding: 6px 16px; font-weight: 600; letter-spacing: .04em; }
 button.live.on { background: var(--red); color: #fff; }
 main { flex: 1; min-height: 0; overflow: auto; }
 footer { padding: 6px 16px; color: var(--dim); font-size: 12px; background: var(--bg2); border-top: .5px solid var(--line); }

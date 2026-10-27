@@ -6,7 +6,7 @@ A browser-based camera rundown for music performances in live TV. Plan every cam
 
 <sub>Tate McRae's "Housewife" at 20:01:31:19 with camera 2 on air: the director's LIVE view in the browser (left) and the iPhone app as camera 2's operator view (right), synced over the network.</sub>
 
-Built with Vue 3 and Vite. No separate backend: the Vite dev server also downloads reference videos and relays the clock to camera operator devices.
+Built with Vue 3 and Vite, plus a small Node server ([`server/`](server)) for director logins, camera join codes, clock sync and YouTube downloads.
 
 **Vibe-coded and open source.** The web app and the iOS app were built by describing what they should do to an AI coding assistant ([Claude Code](https://claude.com/claude-code)), reviewing the result in the running app, and iterating. The code is MIT-licensed ([see below](#license)): use it, fork it, learn from it. Expect rough edges, and test it yourself before you take it near a real show.
 
@@ -45,7 +45,7 @@ Tap a shot to write notes on it, and tap the camera in the header to switch came
 
 ![LIVE view](docs/live.png)
 
-**Camera operator view** (`/#cam=2` on a tablet, CuePilot-style): the same layout as the iPhone app, following the director's window live.
+**Camera operator view** (`/#cam=2&code=…` on a tablet, CuePilot-style): the same layout as the iPhone app, following the director's window live.
 
 <img src="docs/camera.png" alt="Camera operator view on a tablet, camera 2 on standby" width="420">
 
@@ -62,13 +62,13 @@ Tap a shot to write notes on it, and tap the camera in the header to switch came
   - a countdown for every camera to its next shot
   - a program monitor with a timecode/shot overlay and a NOW/NEXT bar with a progress bar
   - a draggable divider between the list and the video
-- **Camera operator view**: `/#cam=3` on a tablet or phone shows the cut flow, this camera's countdown bar (ON AIR / STANDBY / NEXT IN) and its own shots with repositioning time. It has an optional spoken "3, 2, 1" and a sync indicator, and follows the director's window live.
+- **Camera operator view**: `/#cam=3&code=<join code>` on a tablet or phone shows the cut flow, this camera's countdown bar (ON AIR / STANDBY / NEXT IN) and its own shots with repositioning time. It has an optional spoken "3, 2, 1" and a sync indicator, and follows the director's window live.
 - **iPhone and iPad app**: a native camera operator view, and a director remote with play, pause and seek ([see below](#iphone-and-ipad-app)).
 - **Switcher output**: sends the planned cuts to **OBS** (WebSocket v5, with password) or **vMix** (HTTP API) while the rundown plays, and optionally the next shot to preview.
 - **Caller**: a spoken PA call at each cut ("Five. Next, three.") and a "3, 2, 1" count before longer shots, one voice at a time.
 - **Media**: load a local audio file or a reference video. The video drives the show clock, so picture and UI never drift apart.
-- **YouTube import** (dev server only): paste a link and the server downloads it with `yt-dlp`.
-- **Rundown files**: every `src/shows/*.json` appears in the **Open…** menu. Your edits autosave to the browser's `localStorage`.
+- **YouTube import**: paste a link and the server downloads it with `yt-dlp`.
+- **Rundown files**: every `src/shows/*.json` appears in the **Open…** menu. Your edits autosave to your account on the server, so they follow you between devices.
 
 ## Quick start
 
@@ -77,7 +77,13 @@ npm install
 npm run dev
 ```
 
-Open http://localhost:5173. A demo show loads by default.
+Open http://localhost:5173. The first visit asks you to create the director account. After that, sign-up is closed, and more directors are added from the command line:
+
+```bash
+npm run user add jane@example.com
+```
+
+It prints a random password once. A demo show loads by default. Accounts, logins and each director's rundown live in `data/rundown.db` (SQLite, git-ignored). Needs Node 22.13 or later.
 
 The YouTube import also needs:
 
@@ -99,23 +105,37 @@ brew install yt-dlp ffmpeg
 
 ## Camera operator view
 
-Run the dev server on your network, then open a camera's view on each operator's device:
+The director's header shows a join code next to the LIVE button, for example **Join YBCUCB**. Click it to copy the camera link, or give operators the code:
+
+```
+http://<server>:5173/#cam=3&code=YBCUCB
+```
+
+Opening `/#cam=3` without a code asks for one. Camera views only listen: they can't change the rundown or the clock. Each director account is its own room, and the server stores its rundown, so cameras see the shot list even before the director is online.
+
+The director's window publishes the rundown and clock about 10 times a second. Camera views follow it, and they add the network delay, which they measure against the server clock. Keep the director's window in front: browsers slow down background tabs, which pauses the clock updates.
+
+The server listens on every network interface, so devices on your network can reach it directly.
+
+## Hosting
 
 ```bash
-npm run dev:lan
+npm run build
+npm start
 ```
 
-```
-http://<your-mac's-ip>:5173/#cam=3
-```
+`npm start` serves the built app from `dist/` with the same API and sync. Settings:
 
-The director's window (the normal view) publishes the rundown and clock about 10 times a second over the dev server's WebSocket. Camera views only follow. Keep the director's window in front: browsers slow down background tabs, which pauses the clock updates.
+- `PORT` (default 5173)
+- `DATA_DIR` (default `data`)
 
-`dev:lan` makes the whole dev server, including the YouTube download endpoint, reachable from your local network. Only use it on networks you trust.
+Put it behind an HTTPS proxy (Caddy, nginx, or a platform like Fly.io) that sets `X-Forwarded-Proto`, so the login cookie is marked `Secure`. Install `yt-dlp` and `ffmpeg` on the server if you want YouTube import. Many video sites block downloads from cloud servers, though.
+
+For a real show, run the same server on a machine in the production network instead. Then the show doesn't depend on the venue's internet.
 
 ## iPhone and iPad app
 
-`ios/` holds a native SwiftUI app (iOS 26, Liquid Glass) that follows the director's window over the same WebSocket as the browser camera views. The web director stays the host. Tap the camera in the header to pick a camera or the director remote:
+`ios/` holds a native SwiftUI app (iOS 26, Liquid Glass) that follows the director's window through the same server as the browser camera views. The web director stays the host. Tap the camera in the header to pick a camera or the director remote:
 
 - **Camera**: the waterfall from the browser camera view, or a card layout with a big countdown. The screen edge glows green on standby and red on air. Tap a shot to write notes on it; they stay on the device and show in this camera's list. Turn the phone sideways for a side-by-side layout.
 - **Director remote**: for a director on the move with an iPad. It shows what is on air and next, plus the whole cut flow. Play, pause, jump one bar, or tap a shot to jump there. The director's browser window carries out each command.
@@ -126,9 +146,8 @@ Both shot lists scroll on their own, and **Back to live** returns them to the sh
 
 <sub>Director remote on an iPad Pro 11".</sub>
 
-Open `ios/CamOp.xcodeproj` in Xcode 26 or later, pick your team under *Signing & Capabilities*, and run it. In the app's settings (gear icon), enter your Mac's address, for example `192.168.1.10:5173`, with the dev server started via `npm run dev:lan`. iOS asks for local network access the first time. The Xcode project is generated from `ios/project.yml` with [XcodeGen](https://github.com/yonaskolb/XcodeGen) (`cd ios && xcodegen generate`).
+Open `ios/CamOp.xcodeproj` in Xcode 26 or later, pick your team under *Signing & Capabilities*, and run it. In the app's settings (gear icon), enter the server, for example `192.168.1.10:5173` on your network or `rundown.example.com` for an HTTPS host. Then enter the join code. The director remote needs the director's email and password instead. iOS asks for local network access the first time. The Xcode project is generated from `ios/project.yml` with [XcodeGen](https://github.com/yonaskolb/XcodeGen) (`cd ios && xcodegen generate`).
 
-Like the browser views, the app trusts anyone on the network: the remote's play, pause and seek commands are not authenticated.
 
 ## Switcher output
 
@@ -194,13 +213,16 @@ ffmpeg -ss 1.0613 -to 172.24 -i media/full.mp4 -c:v libx264 -c:a aac media/house
 - **No scroll state.** Timeline items are positioned with `calc(30% + (start - now) * zoom px)`, so the browser does the layout. Only items inside a time window around the playhead are rendered.
 - **Waveform.** `decodeAudioData` runs once into a peaks array (50 per second). A canvas redraws only the visible pixels each frame.
 - **One `<video>` element** is created once and moved between views, so switching views never re-buffers.
-- **YouTube import.** [`vite.config.js`](vite.config.js) adds a middleware that runs `yt-dlp` with an argument array (no shell) and accepts only https YouTube URLs.
+- **One server.** [`server/index.js`](server/index.js) handles the login API, the sync WebSocket (`/ws`) and the web app. With `npm run dev` it runs Vite as middleware, and with `npm start` it serves `dist/`. Only the first director window of an account publishes, and the server ignores clock and rundown messages from any other.
+- **Auth.** Passwords are hashed with scrypt. Sessions are random tokens, and the database stores only their SHA-256. The login cookie is `HttpOnly` and `SameSite=Lax`, and API writes require JSON, so a form on another site can't use the cookie. The WebSocket accepts the cookie only from the app's own origin.
+- **YouTube import.** The server runs `yt-dlp` with an argument array (no shell), for logged-in directors only, and accepts only https YouTube URLs.
 
 ## Limitations
 
-- The YouTube import and camera-view sync run only with the dev server. A static build has no server to call.
-- Sync is last-writer-wins. Run one director window per show.
-- Edits live in browser storage only. There's no export or sync yet.
+- One working rundown per director account. There's no list of saved shows yet.
+- A join code never changes. Anyone who once had it can keep watching that director's shot list and clock (read-only).
+- Directors can't reset their own password. Delete the user from `data/rundown.db` and add them again.
+- The iOS director remote keeps its login token in UserDefaults, not the Keychain.
 - Downloaded videos are copyrighted by their owners and are excluded from the repo (`media/` is git-ignored). Respect YouTube's Terms of Service and only download content you have the rights to use.
 
 ## License
