@@ -1,4 +1,5 @@
 import { spawn } from 'node:child_process'
+import WebSocket from 'ws'
 import { ltcDecoder, mtcParser, frame } from '../src/timecode.js'
 
 // House timecode read on the show machine (CHASE=ltc or mtc), so the show clock doesn't depend on a browser tab
@@ -28,22 +29,42 @@ function ltc(onFrame, input = process.platform === 'darwin' ? '-f avfoundation -
   start()
 }
 
+// MTC as MIDI bytes on a websocket (server/mtc.js on /midi), for Docker, where there are no MIDI ports
+function mtcSocket(onFrame, url) {
+  const parse = mtcParser(fr => onFrame({ ...frame(fr), at: Date.now() }))
+  const connect = () => {
+    const ws = new WebSocket(url)
+    ws.on('open', () => console.log(`chase mtc: ${url}`))
+    ws.on('message', d => parse(d))
+    ws.on('error', () => {}) // close follows; the generator may not be up yet
+    ws.on('close', () => setTimeout(connect, 2000))
+  }
+  connect()
+}
+
 // MTC: a MIDI input through the optional @julusian/midi package. name: part of the port's name, any port by default
-// shortcut: a port unplugged after opening isn't noticed; restart the server after replugging
 async function mtc(onFrame, name) {
+  if (/^wss?:\/\//.test(name ?? '')) return mtcSocket(onFrame, name)
   let m
   try { m = await import('@julusian/midi') } catch { return console.error('chase mtc: run `npm install @julusian/midi` first') }
-  const input = new (m.default ?? m).Input()
-  input.ignoreTypes(false, false, true) // keep SysEx (full-frame locates) and timing (quarter frames)
   const parse = mtcParser(fr => onFrame({ ...frame(fr), at: Date.now() }))
-  input.on('message', (_, data) => parse(data))
+  let input = null, last = 0, opened = ''
   const open = () => {
-    const i = [...Array(input.getPortCount()).keys()].find(i => !name || input.getPortName(i).includes(name))
-    if (i === undefined) return setTimeout(open, 2000) // wait for it to be plugged in
+    // a fresh Input each time: reopening the same one after its port went away receives nothing
+    const probe = new (m.default ?? m).Input()
+    const i = [...Array(probe.getPortCount()).keys()].find(i => !name || probe.getPortName(i).includes(name))
+    if (i === undefined) { probe.destroy?.(); return setTimeout(open, 2000) } // wait for it to be plugged in
+    input = probe
+    input.on('message', (_, data) => { last = Date.now(); parse(data) })
     input.openPort(i)
-    console.log(`chase mtc: ${input.getPortName(i)}`)
+    input.ignoreTypes(false, false, true) // keep SysEx (full-frame locates) and timing (quarter frames)
+    last = Date.now()
+    if (input.getPortName(i) !== opened) console.log(`chase mtc: ${(opened = input.getPortName(i))}`)
   }
   open()
+  // a port that went away (interface unplugged, generator restarted under the same name) just goes quiet, so reopen
+  // after 2 s of silence; nothing is lost, since a house that sends nothing is stopped anyway
+  setInterval(() => { if (input && Date.now() - last > 2000) { input.closePort(); input.destroy?.(); input = null; open() } }, 1000)
 }
 
 export function startChase(kind, input, onFrame) {

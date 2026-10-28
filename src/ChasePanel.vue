@@ -29,7 +29,8 @@ defineEmits(['close'])
         <span class="status" :class="{ ok: clock.locked, bad: chase.status.startsWith('error') }">{{ clock.locked ? `locked · ${chase.fps} fps` : chase.status }}</span></div>
       <div class="row"><span>Incoming</span><b class="tc">{{ clock.locked ? chase.tc : '--:--:--:--' }}</b></div>
     </template>
-    <p class="hint">While chasing, house timecode runs the show: play, pause and seek are off, and the video follows it muted. The song starts at the LTC start time in the header.</p>
+    <label class="row">Sound while chasing<input type="checkbox" v-model="clock.sound" /></label>
+    <p class="hint">While chasing, house timecode runs the show: play, pause and seek are off, and the video follows it, muted unless sound is on. The song starts at the LTC start time in the header.</p>
   </div>
 </template>
 

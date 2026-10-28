@@ -63,3 +63,64 @@ test('MTC from a MIDI port reaches camera views', async t => {
   })
   out.closePort()
 })
+
+test('the MTC generator speaks what the chase parser reads', async () => {
+  const { quarterFrame, fullFrame } = await import('./mtc.js')
+  const { mtcParser, frame } = await import('../src/timecode.js')
+  const got = []
+  const parse = mtcParser(f => got.push(frame(f)))
+  const n = (20 * 3600 + 59 * 60 + 59) * 25 + 22 // 20:59:59:22, the next 2 frames roll over the hour
+  parse(fullFrame(n))
+  for (let p = 0; p < 8; p++) parse(quarterFrame(n, p))
+  assert.deepEqual(got.map(({ tc, running, fps }) => [tc, running, fps]), [['20:59:59:22', false, 25], ['20:59:59:24', true, 25]])
+})
+
+test('MTC generator transport plays, pauses and locates', async () => {
+  const { transport, frames } = await import('./mtc.js')
+  const { mtcParser, frame } = await import('../src/timecode.js')
+  let ms = 0
+  const got = []
+  const t = transport(frames('00:00:10:00'), mtcParser(f => got.push(frame(f).tc)), () => ms)
+  t.play()
+  ms = 1000; t.tick()
+  assert.deepEqual(t.state(), { tc: '00:00:11:00', running: true, start: '00:00:10:00' })
+  assert.equal(got.at(-1), '00:00:10:24') // last full set of quarter frames, a frame behind the clock
+  t.pause(); ms = 5000; t.tick()
+  assert.equal(t.state().tc, '00:00:11:00')
+  assert.equal(got.at(-1), '00:00:11:00') // the pause locates receivers
+  t.jump(-20)
+  assert.equal(t.state().tc, '23:59:51:00') // wraps around midnight
+  assert.equal(frames('00:00:00:25'), null)
+})
+
+test('MTC chase finds the port again after the generator restarts', async t => {
+  let midi
+  try { const m = await import('@julusian/midi'); midi = m.default ?? m } catch { return t.skip('@julusian/midi not installed') }
+  const first = new midi.Output()
+  try { first.openVirtualPort('rundown-test-mtc-2') } catch { return t.skip('no virtual MIDI ports on this system') }
+  await chasing(5196, { CHASE: 'mtc', CHASE_INPUT: 'rundown-test-mtc-2' }, async got => {
+    await wait(1500) // the server opens the port
+    first.closePort()
+    const again = new midi.Output()
+    again.openVirtualPort('rundown-test-mtc-2')
+    await wait(3500) // silent for over 2 s, so the server reopens it
+    again.sendMessage([0xf0, 0x7f, 0x7f, 0x01, 0x01, (1 << 5) | 1, 2, 3, 4, 0xf7])
+    await wait(300)
+    assert.equal(got.at(-1)?.tc, '01:02:03:04')
+    again.closePort()
+  })
+})
+
+test('MTC from the generator over its websocket reaches camera views', async () => {
+  const gen = spawn('node', ['server/mtc.js', '01:02:03:04', '--paused'], { env: { ...process.env, MTC_PORT: 5193 }, stdio: 'ignore' })
+  try {
+    await chasing(5192, { CHASE: 'mtc', CHASE_INPUT: 'ws://localhost:5193/midi' }, async got => {
+      await wait(2500) // the generator starts; the server retries every 2 s until it's up
+      assert.equal(got.at(-1)?.tc, '01:02:03:04') // a new listener gets the position as a locate
+      await fetch('http://localhost:5193/cmd', { method: 'POST', body: JSON.stringify({ cmd: 'play' }) })
+      await wait(1000)
+      assert.equal(got.at(-1).running, true)
+      assert.ok(got.at(-1).t > 3723.5, got.at(-1).tc)
+    })
+  } finally { gen.kill() }
+})

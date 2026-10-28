@@ -28,3 +28,11 @@ test('MTC quarter frames and full frame', () => {
   parse([0xf0, 0x7f, 0x7f, 0x01, 0x01, (3 << 5) | 10, 20, 30, 15, 0xf7])
   assert.deepEqual(got[1], { h: 10, m: 20, s: 30, f: 15, fps: 30, running: false })
 })
+
+test('time since the start wraps around midnight', async () => {
+  const { sinceStart } = await import('./timecode.js')
+  assert.equal(sinceStart(86395, 0), -5)
+  assert.equal(sinceStart(72010, 72000), 10)
+  assert.equal(sinceStart(71995, 72000), -5)
+  assert.equal(sinceStart(5, 86395), 10)
+})

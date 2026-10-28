@@ -185,7 +185,7 @@ header input:focus { background: var(--fill); }
 .foot .me { display: flex; align-items: center; gap: 8px; }
 .av { flex: none; width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; background: var(--primary); color: var(--primary-fg); font-size: 12px; font-weight: 600; }
 .em { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
-.me small { color: var(--faint); }
+.foot .me small { color: var(--faint); }
 button.icon { background: none; color: var(--dim); padding: 4px 8px; }
 /* top bar: production info left, ‹ song · LTC › centered, LIVE right */
 header { display: grid; grid-template-columns: 1fr auto 1fr; gap: 16px; padding: 6px 12px; }
