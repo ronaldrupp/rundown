@@ -57,7 +57,7 @@ Tap a shot to write notes on it, and tap the camera in the header to switch came
 
 ### Browser
 
-**Editor**: shot info with the previous and next shot, camera buttons, program monitor and track timeline.
+**Editor**: the production and song library on the left, shot info with the previous and next shot, program monitor and track timeline, here following the server's timecode.
 
 ![Editor](docs/editor.png)
 
