@@ -104,10 +104,10 @@ One command starts Rundown, the server, a timecode generator and a playback mach
 docker compose up
 ```
 
-- **Rundown** on http://localhost:5173, logged in as `dev@rundown.localhost` / `Password123`. Phones and tablets on your network can join as cameras.
+- **Rundown** on http://localhost:5173. Log in with `dev@rundown.localhost` / `Password123`. Phones and tablets on your network can join as cameras.
 - **Timecode and playback** on http://localhost:5175 (this machine only): play, pause, jump and locate the timecode, and below that, pick a track and its start time and it plays along.
 
-The timecode starts paused at 19:59:55:00, a 5 s countdown into the example songs at 20:00:00:00. `MTC_START=23:59:55:00 docker compose up` counts down into a song at 00:00:00:00 instead. Rundown follows the generator's MTC over its websocket, since containers have no MIDI ports. Downloaded videos go to `./media`, accounts and rundowns to a Docker volume.
+The timecode starts paused at 19:59:55:00, a 5 s countdown into Housewife at 20:00:00:00. The other example songs start at other times (the LTC time in the header): use Locate, or start the generator elsewhere with `MTC_START=20:59:55:00 docker compose up`. Rundown follows the generator's MTC over its websocket, since containers have no MIDI ports. Downloaded videos go to `./media`, accounts and rundowns to a Docker volume.
 
 ## Keyboard
 
