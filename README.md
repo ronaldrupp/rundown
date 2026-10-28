@@ -12,6 +12,26 @@ Built with Vue 3 and Vite, plus a small Node server ([`server/`](server)) for di
 
 > Inspired by professional show-calling tools such as [LiveEdit](https://liveedit.app) and [CuePilot](https://www.cuepilot.com). This is an independent hobby project. It is not affiliated with, endorsed by or connected to either product or company. All product names and trademarks belong to their respective owners.
 
+## Try it locally with Docker
+
+Everything for a rehearsal on one machine: Rundown, its server, a timecode generator and a playback machine that follows it. You need [Docker Desktop](https://www.docker.com/products/docker-desktop/) running.
+
+1. Start it from this folder (the first build takes a few minutes):
+
+   ```bash
+   docker compose up
+   ```
+
+2. Open **Rundown** on http://localhost:5173 and log in with:
+   - Email: `dev@rundown.localhost`
+   - Password: `Password123`
+
+   Phones and tablets on your network can join as cameras with the join code shown bottom left.
+
+3. Open **timecode and playback** on http://localhost:5175 (this machine only). Press **Play** to roll the timecode; Rundown follows it. Below the controls, pick a track and its start time, and it plays along.
+
+The timecode starts paused at 19:59:55:00, a 5 s countdown into Housewife at 20:00:00:00. The other example songs start at other times (the LTC time in the header): use Locate, or start elsewhere with `MTC_START=20:59:55:00 docker compose up`. Videos you download in Rundown land in `./media`; accounts and rundowns live in a Docker volume. Stop it all with `docker compose down`.
+
 ## Screenshots
 
 All screenshots show the example rundown for Tate McRae's "Housewife" ([see below](#example-reverse-engineered-shot-list)). The performance video is blurred on purpose.
@@ -95,19 +115,6 @@ The YouTube import also needs:
 ```bash
 brew install yt-dlp ffmpeg
 ```
-
-### The whole demo in Docker
-
-One command starts Rundown, the server, a timecode generator and a playback machine that follows it:
-
-```bash
-docker compose up
-```
-
-- **Rundown** on http://localhost:5173. Log in with `dev@rundown.localhost` / `Password123`. Phones and tablets on your network can join as cameras.
-- **Timecode and playback** on http://localhost:5175 (this machine only): play, pause, jump and locate the timecode, and below that, pick a track and its start time and it plays along.
-
-The timecode starts paused at 19:59:55:00, a 5 s countdown into Housewife at 20:00:00:00. The other example songs start at other times (the LTC time in the header): use Locate, or start the generator elsewhere with `MTC_START=20:59:55:00 docker compose up`. Rundown follows the generator's MTC over its websocket, since containers have no MIDI ports. Downloaded videos go to `./media`, accounts and rundowns to a Docker volume.
 
 ## Keyboard
 
@@ -193,7 +200,7 @@ CHASE=ltc npm start
 
 - `CHASE=ltc` reads LTC from an audio input through `ffmpeg` (installed for YouTube import anyway). By default it uses the first input: `-f avfoundation -i :0` on a Mac, `-f alsa -i default` on Linux. `CHASE_INPUT` replaces those ffmpeg input arguments, for example `CHASE_INPUT="-f avfoundation -i :2"`. `ffmpeg -f avfoundation -list_devices true -i ""` lists the Mac's inputs.
 - `CHASE=mtc` reads MIDI timecode from a MIDI input through the optional `@julusian/midi` package. `CHASE_INPUT` picks the first port whose name contains it, for example `CHASE_INPUT="IAC"`. Without it, the server opens the first port.
-- No house timecode to test with? `npm run mtc [hh:mm:ss:ff]` sends 25 fps MTC from a virtual MIDI port and on its websocket (`CHASE_INPUT=ws://localhost:5175/midi`), from 20:00:00:00 by default (add `-- --paused` to start paused). Start it first, then `CHASE=mtc CHASE_INPUT="Rundown MTC" npm run dev`, and play, pause, jump and locate on http://localhost:5175. Below the controls, that page is also a playback machine: pick a track and its start time, and it plays while MTC rolls. Or run all of it with `docker compose up` ([see above](#the-whole-demo-in-docker)).
+- No house timecode to test with? `npm run mtc [hh:mm:ss:ff]` sends 25 fps MTC from a virtual MIDI port and on its websocket (`CHASE_INPUT=ws://localhost:5175/midi`), from 20:00:00:00 by default (add `-- --paused` to start paused). Start it first, then `CHASE=mtc CHASE_INPUT="Rundown MTC" npm run dev`, and play, pause, jump and locate on http://localhost:5175. Below the controls, that page is also a playback machine: pick a track and its start time, and it plays while MTC rolls. Or run all of it with `docker compose up` ([see above](#try-it-locally-with-docker)).
 
 The server sends every frame, stamped with its own clock, to every director window and camera view. They all run their clock from it directly, so no browser tab has to stay in front and a takeover doesn't interrupt it. There is one house clock per show machine, so every account on the server follows it. A director window working on a performance of its own (not the live one) keeps its own transport, so you can still scrub while editing during a show. The **Chase** button reads **SERVER LTC** or **SERVER MTC** while the server chases.
 
