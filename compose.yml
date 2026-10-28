@@ -1,0 +1,37 @@
+# The whole demo with one command: `docker compose up`, then
+#   Rundown            http://localhost:5173  (dev@rundown.localhost / Password123)
+#   timecode+playback  http://localhost:5175
+# There are no MIDI ports in a container, so the server chases the generator's MTC over its websocket.
+services:
+  rundown:
+    build: .
+    image: rundown
+    command: ["node", "server/index.js", "--dev-user"]
+    environment:
+      CHASE: mtc
+      CHASE_INPUT: ws://mtc:5175/midi
+    ports:
+      # on the network too, so phones and tablets can join as cameras
+      - "5173:5173"
+    volumes:
+      # accounts, sessions and rundowns (SQLite)
+      - data:/data
+      # downloaded videos, shared with your own ./media
+      - ./media:/app/media
+    restart: unless-stopped
+
+  mtc:
+    # the same image; build here too, or compose tries to pull an image called rundown
+    build: .
+    image: rundown
+    # MTC_START, e.g. MTC_START=23:59:55:00 docker compose up, for a 5 s countdown into a song at 00:00:00:00
+    command: ["node", "server/mtc.js", "${MTC_START:-19:59:55:00}", "--paused"]
+    environment:
+      MTC_HOST: 0.0.0.0
+    ports:
+      # this machine only: anyone who can reach it can run the show's clock
+      - "127.0.0.1:5175:5175"
+    restart: unless-stopped
+
+volumes:
+  data:

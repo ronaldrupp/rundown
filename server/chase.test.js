@@ -110,3 +110,17 @@ test('MTC chase finds the port again after the generator restarts', async t => {
     again.closePort()
   })
 })
+
+test('MTC from the generator over its websocket reaches camera views', async () => {
+  const gen = spawn('node', ['server/mtc.js', '01:02:03:04', '--paused'], { env: { ...process.env, MTC_PORT: 5193 }, stdio: 'ignore' })
+  try {
+    await chasing(5192, { CHASE: 'mtc', CHASE_INPUT: 'ws://localhost:5193/midi' }, async got => {
+      await wait(2500) // the generator starts; the server retries every 2 s until it's up
+      assert.equal(got.at(-1)?.tc, '01:02:03:04') // a new listener gets the position as a locate
+      await fetch('http://localhost:5193/cmd', { method: 'POST', body: JSON.stringify({ cmd: 'play' }) })
+      await wait(1000)
+      assert.equal(got.at(-1).running, true)
+      assert.ok(got.at(-1).t > 3723.5, got.at(-1).tc)
+    })
+  } finally { gen.kill() }
+})

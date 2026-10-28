@@ -1,4 +1,5 @@
 import { spawn } from 'node:child_process'
+import WebSocket from 'ws'
 import { ltcDecoder, mtcParser, frame } from '../src/timecode.js'
 
 // House timecode read on the show machine (CHASE=ltc or mtc), so the show clock doesn't depend on a browser tab
@@ -28,8 +29,22 @@ function ltc(onFrame, input = process.platform === 'darwin' ? '-f avfoundation -
   start()
 }
 
+// MTC as MIDI bytes on a websocket (server/mtc.js on /midi), for Docker, where there are no MIDI ports
+function mtcSocket(onFrame, url) {
+  const parse = mtcParser(fr => onFrame({ ...frame(fr), at: Date.now() }))
+  const connect = () => {
+    const ws = new WebSocket(url)
+    ws.on('open', () => console.log(`chase mtc: ${url}`))
+    ws.on('message', d => parse(d))
+    ws.on('error', () => {}) // close follows; the generator may not be up yet
+    ws.on('close', () => setTimeout(connect, 2000))
+  }
+  connect()
+}
+
 // MTC: a MIDI input through the optional @julusian/midi package. name: part of the port's name, any port by default
 async function mtc(onFrame, name) {
+  if (/^wss?:\/\//.test(name ?? '')) return mtcSocket(onFrame, name)
   let m
   try { m = await import('@julusian/midi') } catch { return console.error('chase mtc: run `npm install @julusian/midi` first') }
   const parse = mtcParser(fr => onFrame({ ...frame(fr), at: Date.now() }))

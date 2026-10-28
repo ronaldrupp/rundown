@@ -1,9 +1,11 @@
 import { readFileSync } from 'node:fs'
 import { createServer } from 'node:http'
 import { fileURLToPath } from 'node:url'
+import { WebSocketServer } from 'ws'
 
 // MTC generator for rehearsing without house timecode: `npm run mtc [hh:mm:ss:ff]`, then the server with
-// CHASE=mtc CHASE_INPUT="Rundown MTC". Sends 25 fps from a virtual MIDI port, from 20:00:00:00 by default,
+// CHASE=mtc CHASE_INPUT="Rundown MTC". Sends 25 fps from 20:00:00:00 by default, from a virtual MIDI port and as the
+// same MIDI bytes on ws://localhost:5175/midi (CHASE_INPUT=ws://..., and in Docker, where there are no MIDI ports),
 // with play, pause and locate controls on http://localhost:5175 (MTC_PORT), above a player that chases it (mtc.html)
 const FPS = 25, RATE = 1 // MTC rate code for 25 fps
 
@@ -51,18 +53,25 @@ export function transport(start, send, now = () => performance.now()) {
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const start = frames(process.argv[2] ?? '20:00:00:00')
   if (start === null) { console.error('usage: npm run mtc [hh:mm:ss:ff]'); process.exit(1) }
-  let midi
-  try { const mod = await import('@julusian/midi'); midi = mod.default ?? mod } catch { console.error('run `npm install @julusian/midi` first'); process.exit(1) }
-  const out = new midi.Output()
-  out.openVirtualPort('Rundown MTC')
-  const t = transport(start, m => out.sendMessage(m))
+  let out = null
+  try {
+    const mod = await import('@julusian/midi')
+    out = new (mod.default ?? mod).Output()
+    out.openVirtualPort('Rundown MTC')
+  } catch (e) { out = null; console.log(`No MIDI port (${e.message}); timecode on the websocket only`) }
+  let wss
+  const t = transport(start, m => {
+    out?.sendMessage(m)
+    const b = Buffer.from(m)
+    for (const c of wss?.clients ?? []) if (c.readyState === 1) c.send(b)
+  })
   t.locate(start)
   if (!process.argv.includes('--paused')) t.play()
   setInterval(t.tick, 5)
 
   const json = (res, code, body) => { res.writeHead(code, { 'Content-Type': 'application/json' }); res.end(JSON.stringify(body)) }
   const PORT = +process.env.MTC_PORT || 5175
-  createServer((req, res) => {
+  const server = createServer((req, res) => {
     if (req.method === 'GET' && req.url === '/') { res.writeHead(200, { 'Content-Type': 'text/html' }); return res.end(readFileSync(new URL('mtc.html', import.meta.url))) }
     if (req.method === 'GET' && req.url === '/state') return json(res, 200, t.state())
     if (req.method === 'GET' && req.url === '/timecode.js') { res.writeHead(200, { 'Content-Type': 'text/javascript' }); return res.end(readFileSync(new URL('../src/timecode.js', import.meta.url))) }
@@ -79,5 +88,10 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
       else return json(res, 400, { error: 'unknown command' })
       json(res, 200, t.state())
     })
-  }).listen(PORT, '127.0.0.1', () => console.log(`Rundown MTC: 25 fps from ${tc(start)}, controls and playback on http://localhost:${PORT}, Ctrl+C to stop`))
+  })
+  // a new listener gets the current position right away, as a locate, instead of waiting for the next one
+  wss = new WebSocketServer({ server, path: '/midi' })
+  wss.on('connection', ws => ws.send(Buffer.from(fullFrame(frames(t.state().tc)))))
+  // MTC_HOST=0.0.0.0 in Docker, where the container's port is published to this machine only (compose.yml)
+  server.listen(PORT, process.env.MTC_HOST || '127.0.0.1', () => console.log(`Rundown MTC: 25 fps from ${tc(start)}, controls and playback on http://localhost:${PORT}, Ctrl+C to stop`))
 }

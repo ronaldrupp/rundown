@@ -1,7 +1,7 @@
 <!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Rundown MTC</title>
 <!-- served by server/mtc.js: the generator's transport on top, and below it a playback machine that plays a track
-     chased to MTC from any MIDI input, the generator's or a real house's -->
+     chased to the generator's MTC -->
 <style>
   :root { --bg: #0a0a0a; --bg2: #171717; --fill: #262626; --fill-hi: #2f2f2f; --text: #fafafa; --dim: #a1a1a1; --line: rgba(255,255,255,.1);
     --red: #e5484d; --green: #46a758; --orange: #f76b15; --mono: ui-monospace, SFMono-Regular, Menlo, monospace; color-scheme: dark }
@@ -50,7 +50,7 @@
       <input type="file" id="file" accept="audio/*,video/*" aria-label="Track">
       <label>Starts at <input id="start" value="00:00:00:00" aria-label="Track starts at timecode" autocomplete="off"></label>
     </div>
-    <p class="hint"><span id="midi">Listening to all MIDI inputs.</span> The track plays while MTC rolls, stops when it stops, and counts down before its start time.</p>
+    <p class="hint"><span id="midi">Connecting to the generator.</span> The track plays while MTC rolls, stops when it stops, and counts down before its start time.</p>
   </section>
 </main>
 
@@ -86,7 +86,7 @@
 </script>
 
 <script type="module">
-  // the player listens to MTC over MIDI like a real playback machine, not to the generator's /state
+  // the player chases the generator's MTC stream like a playback machine chases house timecode, not its /state
   import { mtcParser, frame, sinceStart } from '/timecode.js'
   const $ = id => document.getElementById(id), v = $('v')
   let ext = null, start = 0 // ext: the last frame, with performance.now() when it came
@@ -106,16 +106,15 @@
   $('start').oninput = setStart; setStart()
 
   const parse = mtcParser(fr => { ext = { ...frame(fr), at: performance.now() } })
-  if (!navigator.requestMIDIAccess) $('midi').textContent = 'This browser has no Web MIDI. Use Chrome or Edge.'
-  else {
-    // full-frame locates are SysEx; without that permission quarter frames still work
-    const midi = await navigator.requestMIDIAccess({ sysex: true }).catch(() => navigator.requestMIDIAccess()).catch(e => ($('midi').textContent = `No MIDI access: ${e.message}`, null))
-    const bind = () => {
-      for (const i of midi.inputs.values()) i.onmidimessage = e => parse(e.data)
-      $('midi').textContent = `Listening to ${[...midi.inputs.values()].map(i => i.name).join(', ') || 'no MIDI inputs yet'}.`
-    }
-    if (midi) { bind(); midi.onstatechange = bind } // inputs that appear later, like a restarted generator's port
+  // the generator's MTC as raw MIDI bytes, the same messages its MIDI port sends
+  const listen = () => {
+    const ws = new WebSocket(`ws://${location.host}/midi`)
+    ws.binaryType = 'arraybuffer'
+    ws.onopen = () => ($('midi').textContent = 'Listening to the generator.')
+    ws.onmessage = e => parse(new Uint8Array(e.data))
+    ws.onclose = () => { $('midi').textContent = 'Generator not reachable, retrying.'; setTimeout(listen, 2000) }
   }
+  listen()
 
   // the same rules as Rundown's own chase (store.js): roll while frames come, a gap over 0.25 s means the house stopped
   function tick() {

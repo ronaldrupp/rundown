@@ -228,4 +228,10 @@ function enter(ws, r, role, userId) {
   })
 }
 
+// docker stop (and Ctrl+C) would drop edits still waiting on their save timer: write them first
+for (const sig of ['SIGTERM', 'SIGINT']) process.on(sig, () => {
+  for (const [id, r] of rooms) { if (r.saveTimer) saveShow(id, r.show); r.sockets.forEach(s => flush(s, id)) }
+  process.exit(0)
+})
+
 server.listen(PORT, () => console.log(`Rundown ${dev ? 'dev server' : 'server'} on http://localhost:${PORT}`))
